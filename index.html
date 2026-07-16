@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ثبت پروژه کنج</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --tg-theme-bg-color: #f2f2f7; --tg-theme-button-color: #007aff; }
+        body { font-family: -apple-system, sans-serif; background: var(--tg-theme-bg-color); padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .add-btn { background: #34c759; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <label>🏢 نام برند:</label>
+        <input type="text" id="client_name" placeholder="مثال: برند ایکس">
+    </div>
+    <div id="tasks-container"></div>
+    <button class="add-btn" onclick="addNewTask()">➕ افزودن آفیش</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.MainButton.text = "ثبت نهایی پروژه";
+        tg.MainButton.show();
+
+        let count = 0;
+        function addNewTask() {
+            count++;
+            document.getElementById('tasks-container').innerHTML += `
+                <div class="card" id="task-${count}">
+                    <input type="text" id="title-${count}" placeholder="عنوان آفیش">
+                    <select id="svc-${count}">
+                        <option value="photographer">📸 عکاس</option>
+                        <option value="filmmaker">🎥 فیلم‌ساز</option>
+                        <option value="editor">✂️ تدوین‌گر</option>
+                    </select>
+                    <input type="date" id="date-${count}">
+                    <input type="number" id="fee-${count}" placeholder="دستمزد (تومان)">
+                </div>`;
+        }
+        
+        tg.onEvent('mainButtonClicked', () => {
+            const data = { client_name: document.getElementById('client_name').value, tasks: [] };
+            for(let i=1; i<=count; i++) {
+                data.tasks.push({
+                    title: document.getElementById('title-'+i).value,
+                    service: document.getElementById('svc-'+i).value,
+                    date: document.getElementById('date-'+i).value,
+                    fee: document.getElementById('fee-'+i).value,
+                    assigned_to: 83013720 // فعلا پیش‌فرض فرمانده
+                });
+            }
+            tg.sendData(JSON.stringify(data));
+            tg.close();
+        });
+        addNewTask();
+    </script>
+</body>
+</html>
