@@ -3,189 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ثبت پروژه و آفیش - استودیو کنج</title>
+    <title>ثبت پروژه - استودیو کنج</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --tg-theme-bg-color: #efeff4;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #007aff;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-hint-color: #8e8e93;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --primary-color: #007aff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            margin: 0; padding: 16px; font-size: 16px; user-select: none;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 16px; font-size: 15px;
         }
-        .container { max-width: 500px; margin: 0 auto; }
-        h2 { text-align: center; font-size: 20px; margin-bottom: 20px; color: var(--tg-theme-button-color); }
-        .card { background: #ffffff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .container { max-width: 500px; margin: 0 auto; padding-bottom: 80px; }
+        .status-bar { text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 15px; color: #6b7280; }
+        
+        /* طراحی کارت‌ها و فرم‌ها */
+        .card {
+            background: var(--card-bg); border-radius: 12px; padding: 16px; 
+            margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .task-card { border-right: 4px solid var(--primary-color); position: relative; }
+        
         .form-group { margin-bottom: 14px; }
-        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #4b5563; }
+        
+        /* ورودی‌های استاندارد */
         input, select {
-            width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 8px;
-            box-sizing: border-box; font-size: 15px; background-color: #fcfcfc; outline: none;
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); 
+            border-radius: 8px; box-sizing: border-box; font-size: 14px;
+            background-color: #f9fafb; outline: none; transition: border 0.2s;
+            font-family: inherit;
         }
-        input:focus, select:focus { border-color: var(--tg-theme-button-color); }
-        .task-card { border-right: 4px solid var(--tg-theme-button-color); position: relative; }
-        .remove-task-btn {
-            position: absolute; top: 12px; left: 12px; background: #ff3b30; color: #fff;
-            border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px;
-            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
+        input:focus, select:focus { border-color: var(--primary-color); background-color: #ffffff; }
+        
+        /* دکمه‌ها */
         .add-task-btn {
-            background-color: #34c759; color: white; border: none; padding: 12px;
-            border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 24px;
+            background-color: #e0f2fe; color: #0284c7; border: 1px dashed #0284c7; 
+            padding: 14px; border-radius: 10px; width: 100%; font-size: 15px; 
+            font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        .time-picker-wrapper { display: flex; gap: 10px; }
-        .time-picker-wrapper select { flex: 1; text-align: center; }
-        .loading { text-align: center; color: var(--tg-theme-hint-color); font-size: 14px; margin-bottom: 10px; font-weight:bold; }
+        .remove-btn {
+            position: absolute; top: 12px; left: 12px; background: #fee2e2; color: #ef4444;
+            border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+        }
+        .header-title { font-size: 16px; font-weight: bold; margin: 0 0 16px 0; color: #111827; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>➕ ثبت پروژه و آفیش جدید</h2>
-        <div id="loading-status" class="loading">⏳ در حال ارتباط با سرور کنج...</div>
+        <div id="loading-status" class="status-bar">⏳ در حال ارتباط با سرور...</div>
         
         <div class="card">
+            <h3 class="header-title">🏢 اطلاعات پایه پروژه</h3>
             <div class="form-group">
-                <label for="client_name">🏢 نام برند / کارفرما:</label>
-                <input type="text" id="client_name" placeholder="مثال: برند نایک یا پروژه شخصی" required>
+                <label>نام برند / کارفرما:</label>
+                <input type="text" id="client_name" placeholder="مثال: برند نایک" required>
             </div>
         </div>
 
         <div id="tasks-container"></div>
-        <button class="add-task-btn" onclick="addNewTaskCard()">➕ افزودن آفیش / تسک جدید</button>
+        
+        <button class="add-task-btn" onclick="addNewTaskCard()">
+            <span>➕</span> افزودن آفیش جدید به این پروژه
+        </button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.MainButton.text = "🚀 ثبت نهایی و ارسال به اعضا";
+        tg.MainButton.text = "🚀 ثبت نهایی پروژه";
         tg.MainButton.show();
         
-        // آدرس سرور ابری شما
+        // آدرس پایه برای جلوگیری از خطای روتینگ سوپابیس
         const SUPABASE_FN_URL = "https://hloqlpffqvxqaqixmikc.supabase.co/functions/v1/super-processor";
         let teamMembers = [];
         let taskCounter = 0;
 
-        // دریافت آنلاین اعضا از دیتابیس سوپابیس
+        // دریافت زنده اطلاعات (با متد GET امن)
         async function fetchTeamMembers() {
             try {
-                const res = await fetch(`${SUPABASE_FN_URL}/get-members`);
-                if (!res.ok) throw new Error('Network error');
+                const res = await fetch(SUPABASE_FN_URL); 
+                if (!res.ok) throw new Error('خطای شبکه');
                 teamMembers = await res.json();
-                document.getElementById('loading-status').innerText = `✅ سیستم آنلاین: ${teamMembers.length} هنرمند فعال`;
-                document.getElementById('loading-status').style.color = "#34c759";
+                
+                const statusEl = document.getElementById('loading-status');
+                if(teamMembers.length > 0) {
+                    statusEl.innerText = `✅ متصل شد ( ${teamMembers.length} هنرمند فعال در سیستم )`;
+                    statusEl.style.color = "#10b981"; // سبز
+                } else {
+                    statusEl.innerText = `⚠️ متصل شد اما هنرمندی یافت نشد!`;
+                    statusEl.style.color = "#f59e0b"; // نارنجی
+                }
             } catch (err) {
-                document.getElementById('loading-status').innerText = "⚠️ دسترسی به سرور مقدور نیست";
-                document.getElementById('loading-status').style.color = "#ff3b30";
+                const statusEl = document.getElementById('loading-status');
+                statusEl.innerText = "❌ خطا در اتصال به پایگاه داده استودیو";
+                statusEl.style.color = "#ef4444"; // قرمز
             }
             for (let i = 1; i <= taskCounter; i++) filterMembers(i);
         }
 
+        // ساخت کارت تمیز و ساده
         function addNewTaskCard() {
             taskCounter++;
             const container = document.getElementById('tasks-container');
             const taskHtml = `
                 <div class="card task-card" id="task_card_${taskCounter}">
-                    ${taskCounter > 1 ? `<button class="remove-task-btn" onclick="removeTaskCard(${taskCounter})">×</button>` : ''}
-                    <h3 style="margin-top: 0; font-size: 15px; color: #8e8e93;">آفیش شماره ${taskCounter}</h3>
+                    ${taskCounter > 1 ? `<button class="remove-btn" onclick="removeTaskCard(${taskCounter})">حذف</button>` : ''}
+                    <h3 class="header-title" style="color: var(--primary-color);">🎬 جزئیات آفیش شماره ${taskCounter}</h3>
                     
                     <div class="form-group">
-                        <label>🎬 عنوان تسک / آفیش:</label>
-                        <input type="text" id="task_title_${taskCounter}" placeholder="مثال: آفیش تصویربرداری / تدوین ریلز اول" required>
+                        <label>عنوان تسک / وظیفه:</label>
+                        <input type="text" id="task_title_${taskCounter}" placeholder="مثال: تصویربرداری روز اول" required>
                     </div>
 
                     <div class="form-group">
-                        <label>💼 نوع تخصص مورد نیاز:</label>
+                        <label>تخصص مورد نیاز:</label>
                         <select id="task_service_${taskCounter}" onchange="filterMembers(${taskCounter})">
                             <option value="">-- انتخاب کنید --</option>
                             <option value="filmmaker">🎥 فیلم‌ساز / تصویربردار</option>
                             <option value="photographer">📸 عکاس</option>
                             <option value="editor">✂️ تدوین‌گر / ادیتور</option>
                             <option value="graphic_designer">🎨 طراح گرافیک</option>
-                            <option value="ai_artist">🤖 هنرمند هوش مصنوعی</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label>👤 تخصیص مجری از اعضای کنج:</label>
+                        <label>هنرمند / مجری:</label>
                         <select id="task_assignee_${taskCounter}" required>
-                            <option value="">-- ابتدا تخصص را انتخاب کنید --</option>
+                            <option value="">(ابتدا تخصص را انتخاب کنید)</option>
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>📅 تاریخ حضور / ددلاین (تقویم):</label>
-                        <input type="date" id="task_date_${taskCounter}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>⏰ ساعت حضور / ددلاین (iOS Style):</label>
-                        <div class="time-picker-wrapper">
-                            <select id="task_hour_${taskCounter}">
-                                ${Array.from({length: 24}, (_, i) => `<option value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</option>`).join('')}
-                            </select>
-                            <span style="align-self: center; font-weight: bold;">:</span>
-                            <select id="task_min_${taskCounter}">
-                                <option value="00">00</option>
-                                <option value="15">15</option>
-                                <option value="30">30</option>
-                                <option value="45">45</option>
-                            </select>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>تاریخ حضور:</label>
+                            <input type="date" id="task_date_${taskCounter}" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>ساعت (بومی):</label>
+                            <input type="time" id="task_time_${taskCounter}" value="09:00" required>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>💰 مبلغ دستمزد ثابت (تومان):</label>
+                        <label>مبلغ دستمزد (تومان):</label>
                         <input type="number" id="task_fee_${taskCounter}" placeholder="مثال: 3000000" required>
                     </div>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', taskHtml);
-            
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById(`task_date_${taskCounter}`).value = today;
+            document.getElementById(`task_date_${taskCounter}`).value = new Date().toISOString().split('T')[0];
             filterMembers(taskCounter);
         }
 
-        function removeTaskCard(id) {
-            const card = document.getElementById(`task_card_${id}`);
-            if (card) card.remove();
-        }
+        function removeTaskCard(id) { document.getElementById(`task_card_${id}`)?.remove(); }
 
         function filterMembers(id) {
-            const serviceEl = document.getElementById(`task_service_${id}`);
+            const service = document.getElementById(`task_service_${id}`)?.value;
             const assigneeSelect = document.getElementById(`task_assignee_${id}`);
-            if (!serviceEl || !assigneeSelect) return;
+            if (!assigneeSelect) return;
             
-            const service = serviceEl.value;
             assigneeSelect.innerHTML = '<option value="">-- انتخاب مجری --</option>';
-
             if (!service) return;
 
             const filtered = teamMembers.filter(m => (m.specialties || []).includes(service));
             if (filtered.length === 0) {
-                assigneeSelect.innerHTML = '<option value="">❌ هیچ عضوی با این تخصص یافت نشد</option>';
+                assigneeSelect.innerHTML = '<option value="">❌ کسی با این تخصص یافت نشد</option>';
             } else {
-                filtered.forEach(m => {
-                    assigneeSelect.innerHTML += `<option value="${m.user_id}">${m.full_name}</option>`;
-                });
+                filtered.forEach(m => { assigneeSelect.innerHTML += `<option value="${m.user_id}">${m.full_name}</option>`; });
             }
         }
 
+        // بارگذاری اولیه
         addNewTaskCard();
         fetchTeamMembers();
 
         tg.onEvent('mainButtonClicked', function() {
             const clientName = document.getElementById('client_name').value.trim();
-            if (!clientName) {
-                tg.showAlert("⚠️ لطفاً نام برند / کارفرما را وارد کنید.");
-                return;
-            }
+            if (!clientName) { tg.showAlert("⚠️ نام برند / کارفرما الزامی است."); return; }
 
             const tasks = [];
             for (let i = 1; i <= taskCounter; i++) {
@@ -196,32 +197,25 @@
                 const service = document.getElementById(`task_service_${i}`).value;
                 const assignee = document.getElementById(`task_assignee_${i}`).value;
                 const date = document.getElementById(`task_date_${i}`).value;
-                const hour = document.getElementById(`task_hour_${i}`).value;
-                const min = document.getElementById(`task_min_${i}`).value;
+                const time = document.getElementById(`task_time_${i}`).value;
                 const fee = document.getElementById(`task_fee_${i}`).value;
 
-                if (!title || !service || !assignee || !date || !fee) {
-                    tg.showAlert(`⚠️ لطفاً تمام کادرهای آفیش شماره ${i} را تکمیل کنید.`);
+                if (!title || !service || !assignee || !date || !time || !fee) {
+                    tg.showAlert(`⚠️ تمام کادرهای آفیش شماره ${i} باید پر شوند.`);
                     return;
                 }
 
+                // استانداردسازی زمان برای دیتابیس (HH:MM:SS)
+                const formattedTime = time.length === 5 ? `${time}:00` : time;
+
                 tasks.push({
-                    title: title,
-                    service: service,
-                    assigned_to: Number(assignee),
-                    date: date,
-                    time: `${hour}:${min}:00`,
-                    fee: Number(fee)
+                    title: title, service: service, assigned_to: Number(assignee),
+                    date: date, time: formattedTime, fee: Number(fee)
                 });
             }
 
-            if (tasks.length === 0) {
-                tg.showAlert("⚠️ حداقل باید یک آفیش ثبت کنید.");
-                return;
-            }
-
-            const payload = { client_name: clientName, tasks: tasks };
-            tg.sendData(JSON.stringify(payload));
+            if (tasks.length === 0) { tg.showAlert("⚠️ لطفاً یک آفیش ثبت کنید."); return; }
+            tg.sendData(JSON.stringify({ client_name: clientName, tasks: tasks }));
             tg.close();
         });
     </script>
