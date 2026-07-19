@@ -74,7 +74,8 @@
 
         async function fetchTeamMembers() {
             try {
-                const res = await fetch(SUPABASE_FN_URL, {
+                // باگ برطرف شده: کلمه /get-members در انتهای آدرس اضافه شد
+                const res = await fetch(`${SUPABASE_FN_URL}/get-members`, {
                     method: "GET",
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
@@ -95,7 +96,7 @@
                 }
             } catch (err) {
                 const statusEl = document.getElementById('loading-status');
-                statusEl.innerText = "❌ خطا در اتصال (کلید Anon نامعتبر است)";
+                statusEl.innerText = "❌ خطا در اتصال به پایگاه داده استودیو";
                 statusEl.style.color = "#ef4444";
             }
             for (let i = 1; i <= taskCounter; i++) filterMembers(i);
