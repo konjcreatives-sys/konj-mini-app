@@ -3,61 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ثبت پروژه کنج</title>
+    <title>ثبت پروژه و آفیش - استودیو کنج</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --tg-theme-bg-color: #f2f2f7; --tg-theme-button-color: #007aff; }
-        body { font-family: -apple-system, sans-serif; background: var(--tg-theme-bg-color); padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        .add-btn { background: #34c759; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; }
+        :root {
+            --tg-theme-bg-color: #efeff4;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #007aff;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-hint-color: #8e8e93;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            margin: 0; padding: 16px; font-size: 16px; user-select: none;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+        h2 { text-align: center; font-size: 20px; margin-bottom: 20px; color: var(--tg-theme-button-color); }
+        .card { background: #ffffff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        input, select {
+            width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 8px;
+            box-sizing: border-box; font-size: 15px; background-color: #fcfcfc; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--tg-theme-button-color); }
+        .task-card { border-right: 4px solid var(--tg-theme-button-color); position: relative; }
+        .remove-task-btn {
+            position: absolute; top: 12px; left: 12px; background: #ff3b30; color: #fff;
+            border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .add-task-btn {
+            background-color: #34c759; color: white; border: none; padding: 12px;
+            border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 24px;
+        }
+        .time-picker-wrapper { display: flex; gap: 10px; }
+        .time-picker-wrapper select { flex: 1; text-align: center; }
+        .loading { text-align: center; color: var(--tg-theme-hint-color); font-size: 14px; margin-bottom: 10px; font-weight:bold; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <label>🏢 نام برند:</label>
-        <input type="text" id="client_name" placeholder="مثال: برند ایکس">
+    <div class="container">
+        <h2>➕ ثبت پروژه و آفیش جدید</h2>
+        <div id="loading-status" class="loading">⏳ در حال ارتباط با سرور کنج...</div>
+        
+        <div class="card">
+            <div class="form-group">
+                <label for="client_name">🏢 نام برند / کارفرما:</label>
+                <input type="text" id="client_name" placeholder="مثال: برند نایک یا پروژه شخصی" required>
+            </div>
+        </div>
+
+        <div id="tasks-container"></div>
+        <button class="add-task-btn" onclick="addNewTaskCard()">➕ افزودن آفیش / تسک جدید</button>
     </div>
-    <div id="tasks-container"></div>
-    <button class="add-btn" onclick="addNewTask()">➕ افزودن آفیش</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.MainButton.text = "ثبت نهایی پروژه";
+        tg.MainButton.text = "🚀 ثبت نهایی و ارسال به اعضا";
         tg.MainButton.show();
-
-        let count = 0;
-        function addNewTask() {
-            count++;
-            document.getElementById('tasks-container').innerHTML += `
-                <div class="card" id="task-${count}">
-                    <input type="text" id="title-${count}" placeholder="عنوان آفیش">
-                    <select id="svc-${count}">
-                        <option value="photographer">📸 عکاس</option>
-                        <option value="filmmaker">🎥 فیلم‌ساز</option>
-                        <option value="editor">✂️ تدوین‌گر</option>
-                    </select>
-                    <input type="date" id="date-${count}">
-                    <input type="number" id="fee-${count}" placeholder="دستمزد (تومان)">
-                </div>`;
-        }
         
-        tg.onEvent('mainButtonClicked', () => {
-            const data = { client_name: document.getElementById('client_name').value, tasks: [] };
-            for(let i=1; i<=count; i++) {
-                data.tasks.push({
-                    title: document.getElementById('title-'+i).value,
-                    service: document.getElementById('svc-'+i).value,
-                    date: document.getElementById('date-'+i).value,
-                    fee: document.getElementById('fee-'+i).value,
-                    assigned_to: 83013720 // فعلا پیش‌فرض فرمانده
+        // آدرس سرور ابری شما
+        const SUPABASE_FN_URL = "https://hloqlpffqvxqaqixmikc.supabase.co/functions/v1/super-processor";
+        let teamMembers = [];
+        let taskCounter = 0;
+
+        // دریافت آنلاین اعضا از دیتابیس سوپابیس
+        async function fetchTeamMembers() {
+            try {
+                const res = await fetch(`${SUPABASE_FN_URL}/get-members`);
+                if (!res.ok) throw new Error('Network error');
+                teamMembers = await res.json();
+                document.getElementById('loading-status').innerText = `✅ سیستم آنلاین: ${teamMembers.length} هنرمند فعال`;
+                document.getElementById('loading-status').style.color = "#34c759";
+            } catch (err) {
+                document.getElementById('loading-status').innerText = "⚠️ دسترسی به سرور مقدور نیست";
+                document.getElementById('loading-status').style.color = "#ff3b30";
+            }
+            for (let i = 1; i <= taskCounter; i++) filterMembers(i);
+        }
+
+        function addNewTaskCard() {
+            taskCounter++;
+            const container = document.getElementById('tasks-container');
+            const taskHtml = `
+                <div class="card task-card" id="task_card_${taskCounter}">
+                    ${taskCounter > 1 ? `<button class="remove-task-btn" onclick="removeTaskCard(${taskCounter})">×</button>` : ''}
+                    <h3 style="margin-top: 0; font-size: 15px; color: #8e8e93;">آفیش شماره ${taskCounter}</h3>
+                    
+                    <div class="form-group">
+                        <label>🎬 عنوان تسک / آفیش:</label>
+                        <input type="text" id="task_title_${taskCounter}" placeholder="مثال: آفیش تصویربرداری / تدوین ریلز اول" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>💼 نوع تخصص مورد نیاز:</label>
+                        <select id="task_service_${taskCounter}" onchange="filterMembers(${taskCounter})">
+                            <option value="">-- انتخاب کنید --</option>
+                            <option value="filmmaker">🎥 فیلم‌ساز / تصویربردار</option>
+                            <option value="photographer">📸 عکاس</option>
+                            <option value="editor">✂️ تدوین‌گر / ادیتور</option>
+                            <option value="graphic_designer">🎨 طراح گرافیک</option>
+                            <option value="ai_artist">🤖 هنرمند هوش مصنوعی</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>👤 تخصیص مجری از اعضای کنج:</label>
+                        <select id="task_assignee_${taskCounter}" required>
+                            <option value="">-- ابتدا تخصص را انتخاب کنید --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📅 تاریخ حضور / ددلاین (تقویم):</label>
+                        <input type="date" id="task_date_${taskCounter}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>⏰ ساعت حضور / ددلاین (iOS Style):</label>
+                        <div class="time-picker-wrapper">
+                            <select id="task_hour_${taskCounter}">
+                                ${Array.from({length: 24}, (_, i) => `<option value="${String(i).padStart(2, '0')}">${String(i).padStart(2, '0')}</option>`).join('')}
+                            </select>
+                            <span style="align-self: center; font-weight: bold;">:</span>
+                            <select id="task_min_${taskCounter}">
+                                <option value="00">00</option>
+                                <option value="15">15</option>
+                                <option value="30">30</option>
+                                <option value="45">45</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>💰 مبلغ دستمزد ثابت (تومان):</label>
+                        <input type="number" id="task_fee_${taskCounter}" placeholder="مثال: 3000000" required>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', taskHtml);
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(`task_date_${taskCounter}`).value = today;
+            filterMembers(taskCounter);
+        }
+
+        function removeTaskCard(id) {
+            const card = document.getElementById(`task_card_${id}`);
+            if (card) card.remove();
+        }
+
+        function filterMembers(id) {
+            const serviceEl = document.getElementById(`task_service_${id}`);
+            const assigneeSelect = document.getElementById(`task_assignee_${id}`);
+            if (!serviceEl || !assigneeSelect) return;
+            
+            const service = serviceEl.value;
+            assigneeSelect.innerHTML = '<option value="">-- انتخاب مجری --</option>';
+
+            if (!service) return;
+
+            const filtered = teamMembers.filter(m => (m.specialties || []).includes(service));
+            if (filtered.length === 0) {
+                assigneeSelect.innerHTML = '<option value="">❌ هیچ عضوی با این تخصص یافت نشد</option>';
+            } else {
+                filtered.forEach(m => {
+                    assigneeSelect.innerHTML += `<option value="${m.user_id}">${m.full_name}</option>`;
                 });
             }
-            tg.sendData(JSON.stringify(data));
+        }
+
+        addNewTaskCard();
+        fetchTeamMembers();
+
+        tg.onEvent('mainButtonClicked', function() {
+            const clientName = document.getElementById('client_name').value.trim();
+            if (!clientName) {
+                tg.showAlert("⚠️ لطفاً نام برند / کارفرما را وارد کنید.");
+                return;
+            }
+
+            const tasks = [];
+            for (let i = 1; i <= taskCounter; i++) {
+                const card = document.getElementById(`task_card_${i}`);
+                if (!card) continue;
+
+                const title = document.getElementById(`task_title_${i}`).value.trim();
+                const service = document.getElementById(`task_service_${i}`).value;
+                const assignee = document.getElementById(`task_assignee_${i}`).value;
+                const date = document.getElementById(`task_date_${i}`).value;
+                const hour = document.getElementById(`task_hour_${i}`).value;
+                const min = document.getElementById(`task_min_${i}`).value;
+                const fee = document.getElementById(`task_fee_${i}`).value;
+
+                if (!title || !service || !assignee || !date || !fee) {
+                    tg.showAlert(`⚠️ لطفاً تمام کادرهای آفیش شماره ${i} را تکمیل کنید.`);
+                    return;
+                }
+
+                tasks.push({
+                    title: title,
+                    service: service,
+                    assigned_to: Number(assignee),
+                    date: date,
+                    time: `${hour}:${min}:00`,
+                    fee: Number(fee)
+                });
+            }
+
+            if (tasks.length === 0) {
+                tg.showAlert("⚠️ حداقل باید یک آفیش ثبت کنید.");
+                return;
+            }
+
+            const payload = { client_name: clientName, tasks: tasks };
+            tg.sendData(JSON.stringify(payload));
             tg.close();
         });
-        addNewTask();
     </script>
 </body>
 </html>
