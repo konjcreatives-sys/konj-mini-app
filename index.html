@@ -69,16 +69,31 @@
       padding-right: 10px;
       margin-bottom: 10px;
     }
-    .error-card {
-      text-align: center;
-      padding: 32px 16px;
-      color: var(--danger);
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 0;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
     }
   </style>
 </head>
 <body>
 
-  <div id="unauthorized-view" class="hidden card error-card">
+  <div id="unauthorized-view" class="hidden card" style="text-align: center; color: var(--danger);">
     <h2>⚠️ عدم دسترسی</h2>
     <p>لطفاً این برنامه را مستقیماً از داخل ربات تلگرام استودیو کنج باز کنید.</p>
   </div>
@@ -97,7 +112,52 @@
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
-    <div class="card">
+    <div class="tabs">
+      <button id="tab-single-btn" class="tab-btn active" onclick="switchTab('single')">📌 پروژه / آفیش تکی</button>
+      <button id="tab-monthly-btn" class="tab-btn" onclick="switchTab('monthly')">📅 برنامه‌ریزی ماهانه</button>
+    </div>
+
+    <!-- فرم ۱: ثبت پروژه تکی -->
+    <div id="single-project-card" class="card">
+      <h3>📌 ثبت پروژه / آفیش تکی</h3>
+
+      <label>نام برند / کارفرما:</label>
+      <input type="text" id="single_brand" placeholder="مثال: برند نایک">
+
+      <label>عنوان / موضوع آفیش:</label>
+      <input type="text" id="single_title" placeholder="مثال: تصویربرداری تیزر تبلیغاتی">
+
+      <label>تخصص مورد نیاز:</label>
+      <select id="single_role">
+        <option value="filmmaker">🎥 تصویربردار / فیلم‌ساز</option>
+        <option value="photographer">📷 عکاس</option>
+        <option value="editor">🎬 تدوین‌گر</option>
+        <option value="designer">🎨 طراح گرافیک</option>
+        <option value="ai_artist">🤖 هنرمند AI</option>
+      </select>
+
+      <label>تاریخ آفیش:</label>
+      <input type="date" id="single_date">
+
+      <label>ساعت شروع:</label>
+      <input type="time" id="single_time" value="14:00">
+
+      <label>محل / لوکیشن:</label>
+      <input type="text" id="single_location" placeholder="مثال: استودیو کنج / جزیره کیش">
+
+      <label>انتخاب مجری تسک:</label>
+      <select id="single_assignee">
+        <option value="">🔍 تخصیص بعداً توسط مدیر در ربات</option>
+      </select>
+
+      <label>دستمزد آفیش (تومان):</label>
+      <input type="number" id="single_fee" value="1500000" step="100000">
+
+      <button id="single-submit-btn" onclick="submitSingleProject()" style="background: var(--success);">🚀 ثبت نهایی پروژه تکی</button>
+    </div>
+
+    <!-- فرم ۲: برنامه‌ریزی ماهانه -->
+    <div id="monthly-project-card" class="card hidden">
       <h3>📅 برنامه‌ریزی ماهانه اینستاگرام</h3>
       
       <label>نام برند / کارفرما:</label>
@@ -116,12 +176,12 @@
       <input type="number" id="photo_shoots" value="1" min="0">
 
       <button onclick="generateSchedule()">⚡️ تولید پیش‌نویس برنامه</button>
-    </div>
 
-    <div id="preview-section" class="card hidden">
-      <h3>🔍 پیش‌نمایش جدول زمان‌بندی (فاصله ۴ روزه)</h3>
-      <div id="generated-tasks"></div>
-      <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی و ارسال به ربات</button>
+      <div id="preview-section" class="hidden" style="margin-top: 16px;">
+        <h3>🔍 پیش‌نمایش جدول زمان‌بندی (فاصله ۴ روزه)</h3>
+        <div id="generated-tasks"></div>
+        <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی و ارسال به ربات</button>
+      </div>
     </div>
   </div>
 
@@ -129,7 +189,6 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // کلیدها و آدرس‌های تزریق‌شده استودیو کنج
     const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzOTU0OCwiZXhwIjoyMDk5NzE1NTQ4fQ.XQlPjyGfzye0e-FmelZ2GnrTcC_CDMNsK8bAoa1hSDE";
     const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-processor`;
@@ -146,6 +205,20 @@
       return `${year}-${month}-${day}`;
     }
 
+    function switchTab(tab) {
+      if (tab === 'single') {
+        document.getElementById("single-project-card").classList.remove("hidden");
+        document.getElementById("monthly-project-card").classList.add("hidden");
+        document.getElementById("tab-single-btn").classList.add("active");
+        document.getElementById("tab-monthly-btn").classList.remove("active");
+      } else {
+        document.getElementById("monthly-project-card").classList.remove("hidden");
+        document.getElementById("single-project-card").classList.add("hidden");
+        document.getElementById("tab-monthly-btn").classList.add("active");
+        document.getElementById("tab-single-btn").classList.remove("active");
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       if (!currentUser) {
         document.getElementById("unauthorized-view").classList.remove("hidden");
@@ -155,6 +228,7 @@
       if (Number(currentUser.id) === ADMIN_ID) {
         document.getElementById("admin-view").classList.remove("hidden");
         document.getElementById("start_date").value = formatDateLocal(new Date());
+        document.getElementById("single_date").value = formatDateLocal(new Date());
         await fetchMembers();
       } else {
         document.getElementById("member-view").classList.remove("hidden");
@@ -171,12 +245,19 @@
             'X-Telegram-Init-Data': tg.initData || ''
           }
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
         const data = await res.json();
         activeMembers = data.members || [];
+        
+        const select = document.getElementById("single_assignee");
+        select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر در ربات</option>';
+        activeMembers.forEach(m => {
+          select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+        });
+
         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
       } catch (err) {
-        document.getElementById("status-bar").innerHTML = `<span class="status-err">❌ خطا در دریافت اعضا</span>`;
+        document.getElementById("status-bar").innerHTML = `<span class="status-err">⚠️ عدم دریافت اعضا (حالت آفلاین)</span>`;
       }
     }
 
@@ -188,7 +269,6 @@
             'X-Telegram-Init-Data': tg.initData || ''
           }
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const container = document.getElementById("member-tasks-list");
         if (!data.tasks || data.tasks.length === 0) {
@@ -205,6 +285,41 @@
       } catch (err) {
         document.getElementById("member-tasks-list").innerText = "خطا در دریافت لیست تسک‌ها.";
       }
+    }
+
+    async function submitSingleProject() {
+      const brand = document.getElementById("single_brand").value.trim();
+      const title = document.getElementById("single_title").value.trim();
+      const date = document.getElementById("single_date").value;
+      const time = document.getElementById("single_time").value;
+      const role = document.getElementById("single_role").value;
+      const assignee = document.getElementById("single_assignee").value;
+      const fee = parseInt(document.getElementById("single_fee").value, 10) || 0;
+      const location = document.getElementById("single_location").value.trim();
+
+      if (!brand || !date) {
+        alert("لطفاً نام برند و تاریخ آفیش را وارد کنید.");
+        return;
+      }
+
+      const btn = document.getElementById("single-submit-btn");
+      btn.disabled = true;
+      btn.innerText = "در حال ثبت...";
+
+      const payload = {
+        action: "create_single_project",
+        brand,
+        title: title || `آفیش ${brand}`,
+        date,
+        time,
+        role,
+        assignee: assignee || null,
+        fee,
+        location,
+        admin_id: currentUser.id
+      };
+
+      await sendPayloadToBot(payload, btn, "🚀 ثبت نهایی پروژه تکی");
     }
 
     function generateSchedule() {
@@ -310,6 +425,10 @@
         tasks: calculatedTasks
       };
 
+      await sendPayloadToBot(payload, btn, "🚀 ثبت نهایی و ارسال به ربات");
+    }
+
+    async function sendPayloadToBot(payload, btn, resetLabel) {
       try {
         const res = await fetch(FUNCTION_URL, {
           method: 'POST',
@@ -334,7 +453,7 @@
         } catch (err) {
           alert("خطا در ارسال داده‌ها به ربات. لطفاً مجدداً تلاش کنید.");
           btn.disabled = false;
-          btn.innerText = "🚀 ثبت نهایی و ارسال به ربات";
+          btn.innerText = resetLabel;
         }
       }
     }
