@@ -89,6 +89,12 @@
       background: var(--accent);
       color: #fff;
     }
+    .jalali-badge {
+      font-size: 0.85em;
+      color: #38bdf8;
+      margin-top: 4px;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -136,8 +142,9 @@
         <option value="ai_artist">🤖 هنرمند AI</option>
       </select>
 
-      <label>تاریخ آفیش:</label>
-      <input type="date" id="single_date">
+      <label>تاریخ آفیش (شمسی / میلادی):</label>
+      <input type="date" id="single_date" onchange="updateJalaliBadge('single_date', 'single_date_jalali')">
+      <span id="single_date_jalali" class="jalali-badge"></span>
 
       <label>ساعت شروع:</label>
       <input type="time" id="single_time" value="14:00">
@@ -156,7 +163,7 @@
       <button id="single-submit-btn" onclick="submitSingleProject()" style="background: var(--success);">🚀 ثبت نهایی پروژه تکی</button>
     </div>
 
-    <!-- فرم ۲: برنامه‌ریزی ماهانه -->
+    <!-- فرم ۲: برنامه‌ریزی ماهانه اینستاگرام -->
     <div id="monthly-project-card" class="card hidden">
       <h3>📅 برنامه‌ریزی ماهانه اینستاگرام</h3>
       
@@ -164,7 +171,8 @@
       <input type="text" id="brand_name" placeholder="مثال: برند نایک">
 
       <label>تاریخ شروع قرارداد:</label>
-      <input type="date" id="start_date">
+      <input type="date" id="start_date" onchange="updateJalaliBadge('start_date', 'start_date_jalali')">
+      <span id="start_date_jalali" class="jalali-badge"></span>
 
       <label>تعداد پست در ماه:</label>
       <input type="number" id="posts_count" value="4" min="1" max="30">
@@ -198,11 +206,39 @@
     let activeMembers = [];
     let calculatedTasks = [];
 
+    function gregorianToJalali(gy, gm, gd) {
+      const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+      let jy = (gy > 1600) ? 979 : 0;
+      gy -= (gy > 1600) ? 1600 : 621;
+      let gy2 = (gm > 2) ? (gy + 1) : gy;
+      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1;
+      jy += 33 * Math.floor(days / 12053);
+      days %= 12053;
+      jy += 4 * Math.floor(days / 1461);
+      days %= 1461;
+      if (days > 365) {
+        jy += Math.floor((days - 1) / 365);
+        days = (days - 1) % 365;
+      }
+      let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+      let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+      const months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+      return `${jd} ${months[jm - 1]} ${jy}`;
+    }
+
     function formatDateLocal(d) {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
+    }
+
+    function updateJalaliBadge(inputId, badgeId) {
+      const val = document.getElementById(inputId).value;
+      if (!val) return;
+      const parts = val.split('-');
+      const jalaliStr = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
+      document.getElementById(badgeId).innerText = `📅 تاریخ شمسی: ${jalaliStr}`;
     }
 
     function switchTab(tab) {
@@ -227,8 +263,11 @@
 
       if (Number(currentUser.id) === ADMIN_ID) {
         document.getElementById("admin-view").classList.remove("hidden");
-        document.getElementById("start_date").value = formatDateLocal(new Date());
-        document.getElementById("single_date").value = formatDateLocal(new Date());
+        const todayStr = formatDateLocal(new Date());
+        document.getElementById("start_date").value = todayStr;
+        document.getElementById("single_date").value = todayStr;
+        updateJalaliBadge("start_date", "start_date_jalali");
+        updateJalaliBadge("single_date", "single_date_jalali");
         await fetchMembers();
       } else {
         document.getElementById("member-view").classList.remove("hidden");
@@ -275,13 +314,17 @@
           container.innerText = "هیچ آفیش یا تسک فعالی برای شما ثبت نشده است.";
           return;
         }
-        container.innerHTML = data.tasks.map(t => `
-          <div class="task-item">
-            <strong>${t.title}</strong><br>
-            <small>📅 تاریخ: ${t.scheduled_date} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
-            <small>وضعیت: ${t.status}</small>
-          </div>
-        `).join("");
+        container.innerHTML = data.tasks.map(t => {
+          const parts = t.scheduled_date.split('-');
+          const jDate = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
+          return `
+            <div class="task-item">
+              <strong>${t.title}</strong><br>
+              <small>📅 تاریخ: ${jDate} (${t.scheduled_date}) | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
+              <small>وضعیت: ${t.status}</small>
+            </div>
+          `;
+        }).join("");
       } catch (err) {
         document.getElementById("member-tasks-list").innerText = "خطا در دریافت لیست تسک‌ها.";
       }
@@ -400,16 +443,20 @@
 
     function renderPreview() {
       const container = document.getElementById("generated-tasks");
-      container.innerHTML = calculatedTasks.map((t, idx) => `
-        <div class="task-item">
-          <strong>${t.title}</strong><br>
-          <small>📅 تاریخ: ${t.date}</small><br>
-          ${t.fee > 0 ? `
-            <label>دستمزد (تومان):</label>
-            <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
-          ` : ''}
-        </div>
-      `).join("");
+      container.innerHTML = calculatedTasks.map((t, idx) => {
+        const parts = t.date.split('-');
+        const jDate = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
+        return `
+          <div class="task-item">
+            <strong>${t.title}</strong><br>
+            <small>📅 تاریخ شمسی: ${jDate} (${t.date})</small><br>
+            ${t.fee > 0 ? `
+              <label>دستمزد (تومان):</label>
+              <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
+            ` : ''}
+          </div>
+        `;
+      }).join("");
       document.getElementById("preview-section").classList.remove("hidden");
     }
 
