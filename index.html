@@ -207,23 +207,27 @@
     let calculatedTasks = [];
 
     function gregorianToJalali(gy, gm, gd) {
-      const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-      let jy = (gy > 1600) ? 979 : 0;
-      gy -= (gy > 1600) ? 1600 : 621;
-      let gy2 = (gm > 2) ? (gy + 1) : gy;
-      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1;
-      jy += 33 * Math.floor(days / 12053);
-      days %= 12053;
-      jy += 4 * Math.floor(days / 1461);
-      days %= 1461;
-      if (days > 365) {
-        jy += Math.floor((days - 1) / 365);
-        days = (days - 1) % 365;
+      try {
+        const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        let jy = (gy > 1600) ? 979 : 0;
+        gy -= (gy > 1600) ? 1600 : 621;
+        let gy2 = (gm > 2) ? (gy + 1) : gy;
+        let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1;
+        jy += 33 * Math.floor(days / 12053);
+        days %= 12053;
+        jy += 4 * Math.floor(days / 1461);
+        days %= 1461;
+        if (days > 365) {
+          jy += Math.floor((days - 1) / 365);
+          days = (days - 1) % 365;
+        }
+        let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+        let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+        const months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+        return `${jd} ${months[jm - 1]} ${jy}`;
+      } catch (e) {
+        return `${gy}-${gm}-${gd}`;
       }
-      let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-      let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
-      const months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
-      return `${jd} ${months[jm - 1]} ${jy}`;
     }
 
     function formatDateLocal(d) {
@@ -237,8 +241,10 @@
       const val = document.getElementById(inputId).value;
       if (!val) return;
       const parts = val.split('-');
-      const jalaliStr = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
-      document.getElementById(badgeId).innerText = `📅 تاریخ شمسی: ${jalaliStr}`;
+      if (parts.length === 3) {
+        const jalaliStr = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts[2], 10));
+        document.getElementById(badgeId).innerText = `📅 تاریخ شمسی: ${jalaliStr}`;
+      }
     }
 
     function switchTab(tab) {
@@ -316,7 +322,7 @@
         }
         container.innerHTML = data.tasks.map(t => {
           const parts = t.scheduled_date.split('-');
-          const jDate = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
+          const jDate = (parts.length === 3) ? gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts[2], 10)) : t.scheduled_date;
           return `
             <div class="task-item">
               <strong>${t.title}</strong><br>
@@ -379,7 +385,7 @@
 
       calculatedTasks = [];
       const parts = startDateVal.split('-');
-      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts, 10));
+      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts[2], 10));
 
       for (let v = 0; v < videoShoots; v++) {
         let shootDate = new Date(baseDate);
@@ -445,7 +451,7 @@
       const container = document.getElementById("generated-tasks");
       container.innerHTML = calculatedTasks.map((t, idx) => {
         const parts = t.date.split('-');
-        const jDate = gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts, 10));
+        const jDate = (parts.length === 3) ? gregorianToJalali(parseInt(parts[0], 10), parseInt(parts, 10), parseInt(parts[2], 10)) : t.date;
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
