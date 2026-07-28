@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج</title>
+  <title>مدیریت استودیو کنج (v3.1)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -94,6 +94,7 @@
       color: #38bdf8;
       margin-top: 4px;
       display: block;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -114,7 +115,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج</h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v3.1)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -143,8 +144,8 @@
       </select>
 
       <label>تاریخ آفیش (شمسی / میلادی):</label>
-      <input type="date" id="single_date" onchange="updateJalaliBadge('single_date', 'single_date_jalali')">
-      <span id="single_date_jalali" class="jalali-badge"></span>
+      <input type="date" id="single_date" onchange="updateJalaliBadge('single_date', 'single_date_jalali')" oninput="updateJalaliBadge('single_date', 'single_date_jalali')">
+      <span id="single_date_jalali" class="jalali-badge">📅 تاریخ شمسی: انتخاب نشده</span>
 
       <label>ساعت شروع:</label>
       <input type="time" id="single_time" value="14:00">
@@ -171,8 +172,8 @@
       <input type="text" id="brand_name" placeholder="مثال: برند نایک">
 
       <label>تاریخ شروع قرارداد:</label>
-      <input type="date" id="start_date" onchange="updateJalaliBadge('start_date', 'start_date_jalali')">
-      <span id="start_date_jalali" class="jalali-badge"></span>
+      <input type="date" id="start_date" onchange="updateJalaliBadge('start_date', 'start_date_jalali')" oninput="updateJalaliBadge('start_date', 'start_date_jalali')">
+      <span id="start_date_jalali" class="jalali-badge">📅 تاریخ شمسی: انتخاب نشده</span>
 
       <label>تعداد پست در ماه:</label>
       <input type="number" id="posts_count" value="4" min="1" max="30">
@@ -208,7 +209,7 @@
 
     function gregorianToJalali(gy, gm, gd) {
       if (!gy || !gm || !gd || isNaN(gy) || isNaN(gm) || isNaN(gd)) {
-        return "تاریخ نامشخص";
+        return "انتخاب نشده";
       }
       try {
         const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
@@ -243,18 +244,25 @@
     function updateJalaliBadge(inputId, badgeId) {
       const inputEl = document.getElementById(inputId);
       const badgeEl = document.getElementById(badgeId);
-      if (!inputEl || !badgeEl || !inputEl.value) return;
+      if (!inputEl || !badgeEl) return;
+
+      if (!inputEl.value) {
+        badgeEl.innerText = "📅 تاریخ شمسی: انتخاب نشده";
+        return;
+      }
 
       const parts = inputEl.value.split('-');
       if (parts.length === 3) {
         const y = parseInt(parts[0], 10);
-        const m = parseInt(parts, 10);
-        const d = parseInt(parts, 10);
+        const m = parseInt(parts, 10); // اصلاح دقیق ایندکس ماه
+        const d = parseInt(parts, 10); // اصلاح دقیق ایندکس روز
         if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
           const jalaliStr = gregorianToJalali(y, m, d);
           badgeEl.innerText = `📅 تاریخ شمسی: ${jalaliStr}`;
+          return;
         }
       }
+      badgeEl.innerText = "📅 تاریخ شمسی: انتخاب نشده";
     }
 
     function switchTab(tab) {
@@ -282,8 +290,12 @@
         const todayStr = formatDateLocal(new Date());
         document.getElementById("start_date").value = todayStr;
         document.getElementById("single_date").value = todayStr;
-        updateJalaliBadge("start_date", "start_date_jalali");
-        updateJalaliBadge("single_date", "single_date_jalali");
+
+        setTimeout(() => {
+          updateJalaliBadge("start_date", "start_date_jalali");
+          updateJalaliBadge("single_date", "single_date_jalali");
+        }, 100);
+
         await fetchMembers();
       } else {
         document.getElementById("member-view").classList.remove("hidden");
