@@ -129,8 +129,9 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
+    // کلیدها و آدرس‌های تزریق‌شده استودیو کنج
     const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzk1NDgsImV4cCI6MjA5OTcxNTU0OH0.placeholder";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzOTU0OCwiZXhwIjoyMDk5NzE1NTQ4fQ.XQlPjyGfzye0e-FmelZ2GnrTcC_CDMNsK8bAoa1hSDE";
     const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-processor`;
 
     const ADMIN_ID = 83013720;
@@ -220,7 +221,7 @@
 
       calculatedTasks = [];
       const parts = startDateVal.split('-');
-      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts[2], 10));
+      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts, 10));
 
       for (let v = 0; v < videoShoots; v++) {
         let shootDate = new Date(baseDate);
