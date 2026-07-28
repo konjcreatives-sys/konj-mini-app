@@ -1,214 +1,342 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ثبت پروژه - استودیو کنج</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --bg-color: #f3f4f6; --card-bg: #ffffff; --primary-color: #007aff;
-            --text-color: #1f2937; --border-color: #e5e7eb;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; font-size: 15px;
-        }
-        .container { max-width: 500px; margin: 0 auto; padding-bottom: 80px; }
-        .status-bar { text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 15px; color: #6b7280; }
-        .card {
-            background: var(--card-bg); border-radius: 12px; padding: 16px; 
-            margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color);
-        }
-        .task-card { border-right: 4px solid var(--primary-color); position: relative; }
-        .form-group { margin-bottom: 14px; }
-        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #4b5563; }
-        input, select {
-            width: 100%; padding: 12px; border: 1px solid var(--border-color); 
-            border-radius: 8px; box-sizing: border-box; font-size: 14px;
-            background-color: #f9fafb; outline: none; transition: border 0.2s; font-family: inherit;
-        }
-        input:focus, select:focus { border-color: var(--primary-color); background-color: #ffffff; }
-        .add-task-btn {
-            background-color: #e0f2fe; color: #0284c7; border: 1px dashed #0284c7; 
-            padding: 14px; border-radius: 10px; width: 100%; font-size: 15px; 
-            font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
-        }
-        .remove-btn {
-            position: absolute; top: 12px; left: 12px; background: #fee2e2; color: #ef4444;
-            border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
-        }
-        .header-title { font-size: 16px; font-weight: bold; margin: 0 0 16px 0; color: #111827; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مدیریت استودیو کنج</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
+    }
+    h2, h3 { margin-top: 0; color: #fff; }
+    label { display: block; margin-top: 12px; font-size: 0.9em; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8em;
+      background: #334155;
+    }
+    .status-ok { color: var(--success); }
+    .status-err { color: var(--danger); }
+    .hidden { display: none; }
+    .task-item {
+      border-right: 3px solid var(--accent);
+      padding-right: 10px;
+      margin-bottom: 10px;
+    }
+    .error-card {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--danger);
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div id="loading-status" class="status-bar">⏳ در حال احراز هویت و اتصال به سرور...</div>
-        
-        <div class="card">
-            <h3 class="header-title">🏢 اطلاعات پایه پروژه</h3>
-            <div class="form-group">
-                <label>نام برند / کارفرما:</label>
-                <input type="text" id="client_name" placeholder="مثال: برند نایک" required>
-            </div>
-        </div>
 
-        <div id="tasks-container"></div>
-        
-        <button class="add-task-btn" onclick="addNewTaskCard()">
-            <span>➕</span> افزودن آفیش جدید به این پروژه
-        </button>
+  <div id="unauthorized-view" class="hidden card error-card">
+    <h2>⚠️ عدم دسترسی</h2>
+    <p>لطفاً این برنامه را مستقیماً از داخل ربات تلگرام استودیو کنج باز کنید.</p>
+  </div>
+
+  <div id="member-view" class="hidden">
+    <div class="card">
+      <h2>📌 کارتابل شخصی شما</h2>
+      <p id="member-greeting" style="color: var(--muted);"></p>
+      <div id="member-tasks-list">در حال دریافت آفیش‌ها...</div>
+    </div>
+  </div>
+
+  <div id="admin-view" class="hidden">
+    <div class="card">
+      <h2>👑 پنل مدیریت استودیو کنج</h2>
+      <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.MainButton.text = "🚀 ثبت نهایی پروژه";
-        tg.MainButton.show();
-        
-        const SUPABASE_FN_URL = "https://hloqlpffqvxqaqixmikc.supabase.co/functions/v1/super-processor";
-        const SUPABASE_ANON_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzk1NDgsImV4cCI6MjA5OTcxNTU0OH0.qDDOutGxDdhXtWvs-yFJgWNMgblhm_vOu3AJsjQveMM";
+    <div class="card">
+      <h3>📅 برنامه‌ریزی ماهانه اینستاگرام</h3>
+      
+      <label>نام برند / کارفرما:</label>
+      <input type="text" id="brand_name" placeholder="مثال: برند نایک">
 
-        let teamMembers = [];
-        let taskCounter = 0;
+      <label>تاریخ شروع قرارداد:</label>
+      <input type="date" id="start_date">
 
-        async function fetchTeamMembers() {
-            try {
-                // باگ برطرف شده: کلمه /get-members در انتهای آدرس اضافه شد
-                const res = await fetch(`${SUPABASE_FN_URL}/get-members`, {
-                    method: "GET",
-                    headers: {
-                        "apikey": SUPABASE_ANON_KEY,
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-                        "Content-Type": "application/json"
-                    }
-                }); 
-                if (!res.ok) throw new Error('خطای دسترسی');
-                teamMembers = await res.json();
-                
-                const statusEl = document.getElementById('loading-status');
-                if(Array.isArray(teamMembers) && teamMembers.length > 0) {
-                    statusEl.innerText = `✅ متصل شد ( ${teamMembers.length} هنرمند فعال در سیستم )`;
-                    statusEl.style.color = "#10b981";
-                } else {
-                    statusEl.innerText = `✅ متصل شد (هنوز هنرمندی فعال نیست)`;
-                    statusEl.style.color = "#10b981";
-                }
-            } catch (err) {
-                const statusEl = document.getElementById('loading-status');
-                statusEl.innerText = "❌ خطا در اتصال به پایگاه داده استودیو";
-                statusEl.style.color = "#ef4444";
-            }
-            for (let i = 1; i <= taskCounter; i++) filterMembers(i);
-        }
+      <label>تعداد پست در ماه:</label>
+      <input type="number" id="posts_count" value="4" min="1" max="30">
 
-        function addNewTaskCard() {
-            taskCounter++;
-            const container = document.getElementById('tasks-container');
-            const taskHtml = `
-                <div class="card task-card" id="task_card_${taskCounter}">
-                    ${taskCounter > 1 ? `<button class="remove-btn" onclick="removeTaskCard(${taskCounter})">حذف</button>` : ''}
-                    <h3 class="header-title" style="color: var(--primary-color);">🎬 جزئیات آفیش شماره ${taskCounter}</h3>
-                    
-                    <div class="form-group">
-                        <label>عنوان تسک / وظیفه:</label>
-                        <input type="text" id="task_title_${taskCounter}" placeholder="مثال: تصویربرداری روز اول" required>
-                    </div>
+      <label>تعداد آفیش تصویربرداری:</label>
+      <input type="number" id="video_shoots" value="2" min="0">
 
-                    <div class="form-group">
-                        <label>تخصص مورد نیاز:</label>
-                        <select id="task_service_${taskCounter}" onchange="filterMembers(${taskCounter})">
-                            <option value="">-- انتخاب کنید --</option>
-                            <option value="filmmaker">🎥 فیلم‌ساز / تصویربردار</option>
-                            <option value="photographer">📸 عکاس</option>
-                            <option value="editor">✂️ تدوین‌گر / ادیتور</option>
-                            <option value="graphic_designer">🎨 طراح گرافیک</option>
-                        </select>
-                    </div>
+      <label>تعداد آفیش عکاسی:</label>
+      <input type="number" id="photo_shoots" value="1" min="0">
 
-                    <div class="form-group">
-                        <label>هنرمند / مجری:</label>
-                        <select id="task_assignee_${taskCounter}" required>
-                            <option value="">(ابتدا تخصص را انتخاب کنید)</option>
-                        </select>
-                    </div>
+      <button onclick="generateSchedule()">⚡️ تولید پیش‌نویس برنامه</button>
+    </div>
 
-                    <div style="display: flex; gap: 10px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label>تاریخ حضور:</label>
-                            <input type="date" id="task_date_${taskCounter}" required>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>ساعت (بومی):</label>
-                            <input type="time" id="task_time_${taskCounter}" value="09:00" required>
-                        </div>
-                    </div>
+    <div id="preview-section" class="card hidden">
+      <h3>🔍 پیش‌نمایش جدول زمان‌بندی (فاصله ۴ روزه)</h3>
+      <div id="generated-tasks"></div>
+      <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی و ارسال به ربات</button>
+    </div>
+  </div>
 
-                    <div class="form-group">
-                        <label>مبلغ دستمزد (تومان):</label>
-                        <input type="number" id="task_fee_${taskCounter}" placeholder="مثال: 3000000" required>
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', taskHtml);
-            document.getElementById(`task_date_${taskCounter}`).value = new Date().toISOString().split('T')[0];
-            filterMembers(taskCounter);
-        }
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-        function removeTaskCard(id) { document.getElementById(`task_card_${id}`)?.remove(); }
+    const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzk1NDgsImV4cCI6MjA5OTcxNTU0OH0.placeholder";
+    const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-processor`;
 
-        function filterMembers(id) {
-            const service = document.getElementById(`task_service_${id}`)?.value;
-            const assigneeSelect = document.getElementById(`task_assignee_${id}`);
-            if (!assigneeSelect) return;
-            
-            assigneeSelect.innerHTML = '<option value="">-- انتخاب مجری --</option>';
-            if (!service) return;
+    const ADMIN_ID = 83013720;
+    const currentUser = tg.initDataUnsafe?.user || null;
+    let activeMembers = [];
+    let calculatedTasks = [];
 
-            const filtered = teamMembers.filter(m => (m.specialties || []).includes(service));
-            if (filtered.length === 0) {
-                assigneeSelect.innerHTML = '<option value="">❌ کسی با این تخصص یافت نشد</option>';
-            } else {
-                filtered.forEach(m => { assigneeSelect.innerHTML += `<option value="${m.user_id}">${m.full_name}</option>`; });
-            }
-        }
+    function formatDateLocal(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
-        addNewTaskCard();
-        fetchTeamMembers();
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!currentUser) {
+        document.getElementById("unauthorized-view").classList.remove("hidden");
+        return;
+      }
 
-        tg.onEvent('mainButtonClicked', function() {
-            const clientName = document.getElementById('client_name').value.trim();
-            if (!clientName) { tg.showAlert("⚠️ نام برند / کارفرما الزامی است."); return; }
+      if (Number(currentUser.id) === ADMIN_ID) {
+        document.getElementById("admin-view").classList.remove("hidden");
+        document.getElementById("start_date").value = formatDateLocal(new Date());
+        await fetchMembers();
+      } else {
+        document.getElementById("member-view").classList.remove("hidden");
+        document.getElementById("member-greeting").innerText = `سلام ${currentUser.first_name || ''} عزیز، خوش آمدید.`;
+        await fetchMemberTasks();
+      }
+    });
 
-            const tasks = [];
-            for (let i = 1; i <= taskCounter; i++) {
-                const card = document.getElementById(`task_card_${i}`);
-                if (!card) continue;
-
-                const title = document.getElementById(`task_title_${i}`).value.trim();
-                const service = document.getElementById(`task_service_${i}`).value;
-                const assignee = document.getElementById(`task_assignee_${i}`).value;
-                const date = document.getElementById(`task_date_${i}`).value;
-                const time = document.getElementById(`task_time_${i}`).value;
-                const fee = document.getElementById(`task_fee_${i}`).value;
-
-                if (!title || !service || !assignee || !date || !time || !fee) {
-                    tg.showAlert(`⚠️ تمام کادرهای آفیش شماره ${i} باید پر شوند.`);
-                    return;
-                }
-
-                const formattedTime = time.length === 5 ? `${time}:00` : time;
-
-                tasks.push({
-                    title: title, service: service, assigned_to: Number(assignee),
-                    date: date, time: formattedTime, fee: Number(fee)
-                });
-            }
-
-            if (tasks.length === 0) { tg.showAlert("⚠️ لطفاً یک آفیش ثبت کنید."); return; }
-            tg.sendData(JSON.stringify({ client_name: clientName, tasks: tasks }));
-            tg.close();
+    async function fetchMembers() {
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
         });
-    </script>
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        activeMembers = data.members || [];
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
+      } catch (err) {
+        document.getElementById("status-bar").innerHTML = `<span class="status-err">❌ خطا در دریافت اعضا</span>`;
+      }
+    }
+
+    async function fetchMemberTasks() {
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${currentUser.id}`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const container = document.getElementById("member-tasks-list");
+        if (!data.tasks || data.tasks.length === 0) {
+          container.innerText = "هیچ آفیش یا تسک فعالی برای شما ثبت نشده است.";
+          return;
+        }
+        container.innerHTML = data.tasks.map(t => `
+          <div class="task-item">
+            <strong>${t.title}</strong><br>
+            <small>📅 تاریخ: ${t.scheduled_date} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
+            <small>وضعیت: ${t.status}</small>
+          </div>
+        `).join("");
+      } catch (err) {
+        document.getElementById("member-tasks-list").innerText = "خطا در دریافت لیست تسک‌ها.";
+      }
+    }
+
+    function generateSchedule() {
+      const brand = document.getElementById("brand_name").value.trim();
+      const startDateVal = document.getElementById("start_date").value;
+      const postsCount = Math.max(1, parseInt(document.getElementById("posts_count").value, 10) || 1);
+      const videoShoots = Math.max(0, parseInt(document.getElementById("video_shoots").value, 10) || 0);
+      const photoShoots = Math.max(0, parseInt(document.getElementById("photo_shoots").value, 10) || 0);
+
+      if (!brand || !startDateVal) {
+        alert("لطفا نام برند و تاریخ شروع را وارد کنید.");
+        return;
+      }
+
+      calculatedTasks = [];
+      const parts = startDateVal.split('-');
+      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts[2], 10));
+
+      for (let v = 0; v < videoShoots; v++) {
+        let shootDate = new Date(baseDate);
+        shootDate.setDate(shootDate.getDate() + (v * 7));
+        calculatedTasks.push({
+          type: "OFFISH_SHOOT",
+          title: `🎥 آفیش تصویربرداری (${v + 1}) - ${brand}`,
+          date: formatDateLocal(shootDate),
+          fee: 1500000,
+          role: "filmmaker",
+          assignee: null
+        });
+      }
+
+      for (let p = 0; p < photoShoots; p++) {
+        let photoDate = new Date(baseDate);
+        photoDate.setDate(photoDate.getDate() + (p * 7));
+        calculatedTasks.push({
+          type: "OFFISH_SHOOT",
+          title: `📸 آفیش عکاسی (${p + 1}) - ${brand}`,
+          date: formatDateLocal(photoDate),
+          fee: 1200000,
+          role: "photographer",
+          assignee: null
+        });
+      }
+
+      let postInterval = Math.max(4, Math.floor(28 / postsCount));
+
+      for (let i = 1; i <= postsCount; i++) {
+        let shootDate = new Date(baseDate);
+        shootDate.setDate(shootDate.getDate() + ((i - 1) * postInterval));
+
+        let editDate = new Date(shootDate);
+        editDate.setDate(editDate.getDate() + 4);
+
+        let pubDate = new Date(editDate);
+        pubDate.setDate(pubDate.getDate() + 4);
+
+        calculatedTasks.push({
+          type: "EDIT_TASK",
+          title: `🎬 تدوین و خروجی (پست ${i}) - ${brand}`,
+          date: formatDateLocal(editDate),
+          fee: 1000000,
+          role: "editor",
+          assignee: null
+        });
+
+        calculatedTasks.push({
+          type: "PUBLISH_POST",
+          title: `📅 انتشار پست ${i} - ${brand}`,
+          date: formatDateLocal(pubDate),
+          fee: 0,
+          role: "admin",
+          assignee: ADMIN_ID
+        });
+      }
+
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const container = document.getElementById("generated-tasks");
+      container.innerHTML = calculatedTasks.map((t, idx) => `
+        <div class="task-item">
+          <strong>${t.title}</strong><br>
+          <small>📅 تاریخ: ${t.date}</small><br>
+          ${t.fee > 0 ? `
+            <label>دستمزد (تومان):</label>
+            <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
+          ` : ''}
+        </div>
+      `).join("");
+      document.getElementById("preview-section").classList.remove("hidden");
+    }
+
+    async function submitProject() {
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.innerText = "در حال ارسال...";
+
+      const payload = {
+        action: "create_monthly_project",
+        brand: document.getElementById("brand_name").value.trim(),
+        admin_id: currentUser.id,
+        tasks: calculatedTasks
+      };
+
+      try {
+        const res = await fetch(FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          },
+          body: JSON.stringify({ message: { from: { id: currentUser.id }, web_app_data: { data: JSON.stringify(payload) } } })
+        });
+
+        if (res.ok) {
+          tg.close();
+        } else {
+          tg.sendData(JSON.stringify(payload));
+          tg.close();
+        }
+      } catch (e) {
+        try {
+          tg.sendData(JSON.stringify(payload));
+          tg.close();
+        } catch (err) {
+          alert("خطا در ارسال داده‌ها به ربات. لطفاً مجدداً تلاش کنید.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی و ارسال به ربات";
+        }
+      }
+    }
+  </script>
 </body>
 </html>
