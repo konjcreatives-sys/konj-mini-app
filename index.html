@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (v5.0)</title>
+  <title>مدیریت استودیو کنج (v5.1)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -130,7 +130,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.0)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.1)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -278,75 +278,33 @@
       updateSummary();
     }
 
-    // الگوریتم دقیق تبدیل شمسی به میلادی
-    function jalaliToGregorian(jy, jm, jd) {
-      jy = Number(jy);
-      jm = Number(jm);
-      jd = Number(jd);
-      let gy = (jy <= 979) ? 621 : 1600;
-      jy = (jy <= 979) ? jy : jy - 979;
-      let days = (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4);
-      const sal_a = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
-      for (let i = 0; i < jm; ++i) days += sal_a[i];
-      days += jd - 1;
-      gy += 400 * Math.floor(days / 146097);
-      days %= 146097;
-      if (days > 36524) {
-        gy += 100 * Math.floor(--days / 36524);
-        days %= 36524;
-        if (days >= 365) days++;
+    function addShamsiDays(y, m, d, daysToAdd) {
+      y = parseInt(y, 10);
+      m = parseInt(m, 10);
+      d = parseInt(d, 10);
+
+      const monthLengths = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+
+      d += daysToAdd;
+      while (d > monthLengths[m]) {
+        d -= monthLengths[m];
+        m += 1;
+        if (m > 12) {
+          m = 1;
+          y += 1;
+        }
       }
-      gy += 4 * Math.floor(days / 1461);
-      days %= 1461;
-      if (days > 365) {
-        gy += Math.floor((days - 1) / 365);
-        days = (days - 1) % 365;
-      }
-      let gd = days + 1 + 79;
-      const sal_g = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-      let gm = 1;
-      while (gm < 13 && gd > sal_g[gm]) {
-        gd -= sal_g[gm];
-        gm++;
-      }
-      if (gm > 12) {
-        gm -= 12;
-        gy += 1;
-      }
-      return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
     }
 
-    // الگوریتم دقیق تبدیل میلادی به شمسی
-    function gregorianToJalali(gy, gm, gd) {
-      gy = Number(gy);
-      gm = Number(gm);
-      gd = Number(gd);
-      if (!gy || !gm || !gd || isNaN(gy) || isNaN(gm) || isNaN(gd)) return "تاریخ نامشخص";
-      const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-      let jy = (gy <= 1600) ? 0 : 979;
-      gy = (gy <= 1600) ? gy - 621 : gy - 1600;
-      let gy2 = (gm > 2) ? (gy + 1) : gy;
-      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1 - 79;
-      if (days < 0) {
-        days += 365;
-        gy -= 1;
-      }
-      jy += 33 * Math.floor(days / 12053);
-      days %= 12053;
-      jy += 4 * Math.floor(days / 1461);
-      days %= 1461;
-      if (days > 365) {
-        jy += Math.floor((days - 1) / 365);
-        days = (days - 1) % 365;
-      }
-      const sal_a = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
-      let jm = 1;
-      while (jm < 13 && days >= sal_a[jm]) {
-        days -= sal_a[jm];
-        jm++;
-      }
-      let jd = days + 1;
-      return `${jd} ${SHAMSI_MONTHS[jm - 1]} ${jy}`;
+    function formatShamsiLabel(shamsiStr) {
+      if (!shamsiStr) return "مشخص نشده";
+      const parts = shamsiStr.split('/');
+      if (parts.length !== 3) return shamsiStr;
+      const d = parseInt(parts, 10);
+      const m = parseInt(parts, 10);
+      const y = parts[0];
+      return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
     }
 
     function switchTab(tab) {
@@ -420,12 +378,10 @@
           return;
         }
         container.innerHTML = data.tasks.map(t => {
-          const parts = t.scheduled_date.split('-');
-          const jDate = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.scheduled_date;
           return `
             <div class="task-item">
               <strong>${t.title}</strong><br>
-              <small>📅 تاریخ: ${jDate} (${t.scheduled_date}) | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
+              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
               <small>وضعیت: ${t.status}</small>
             </div>
           `;
@@ -442,7 +398,7 @@
       const sMonth = document.getElementById("single_shamsi_month").value;
       const sYear = document.getElementById("single_shamsi_year").value;
       
-      const gregDate = jalaliToGregorian(sYear, sMonth, sDay);
+      const shamsiDate = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
 
       const time = document.getElementById("single_time").value;
       const role = document.getElementById("single_role").value;
@@ -463,7 +419,7 @@
         action: "create_single_project",
         brand,
         title: title || `آفیش ${brand}`,
-        date: gregDate,
+        date: shamsiDate,
         time,
         role,
         assignee: assignee || null,
@@ -481,8 +437,6 @@
       const sMonth = document.getElementById("monthly_shamsi_month").value;
       const sYear = document.getElementById("monthly_shamsi_year").value;
 
-      const startDateVal = jalaliToGregorian(sYear, sMonth, sDay);
-
       const postsCount = Math.max(1, parseInt(document.getElementById("posts_count").value, 10) || 1);
       const videoShoots = Math.max(0, parseInt(document.getElementById("video_shoots").value, 10) || 0);
       const photoShoots = Math.max(0, parseInt(document.getElementById("photo_shoots").value, 10) || 0);
@@ -493,23 +447,13 @@
       }
 
       calculatedTasks = [];
-      const parts = startDateVal.split('-');
-      let baseDate = new Date(parseInt(parts[0], 10), parseInt(parts, 10) - 1, parseInt(parts, 10));
-
-      function formatDateLocal(d) {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
 
       for (let v = 0; v < videoShoots; v++) {
-        let shootDate = new Date(baseDate);
-        shootDate.setDate(shootDate.getDate() + (v * 7));
+        const shootShamsi = addShamsiDays(sYear, sMonth, sDay, v * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
           title: `🎥 آفیش تصویربرداری (${v + 1}) - ${brand}`,
-          date: formatDateLocal(shootDate),
+          date: shootShamsi,
           fee: 1500000,
           role: "filmmaker",
           assignee: null
@@ -517,12 +461,11 @@
       }
 
       for (let p = 0; p < photoShoots; p++) {
-        let photoDate = new Date(baseDate);
-        photoDate.setDate(photoDate.getDate() + (p * 7));
+        const photoShamsi = addShamsiDays(sYear, sMonth, sDay, p * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
           title: `📸 آفیش عکاسی (${p + 1}) - ${brand}`,
-          date: formatDateLocal(photoDate),
+          date: photoShamsi,
           fee: 1200000,
           role: "photographer",
           assignee: null
@@ -532,29 +475,23 @@
       let postInterval = Math.max(4, Math.floor(28 / postsCount));
 
       for (let i = 1; i <= postsCount; i++) {
-        let shootDate = new Date(baseDate);
-        shootDate.setDate(shootDate.getDate() + ((i - 1) * postInterval));
-
-        let editDate = new Date(shootDate);
-        editDate.setDate(editDate.getDate() + 4);
-
-        let pubDate = new Date(editDate);
-        pubDate.setDate(pubDate.getDate() + 4);
+        const shootOffset = (i - 1) * postInterval;
+        const editShamsi = addShamsiDays(sYear, sMonth, sDay, shootOffset + 4);
+        const pubShamsi = addShamsiDays(sYear, sMonth, sDay, shootOffset + 8);
 
         calculatedTasks.push({
           type: "EDIT_TASK",
           title: `🎬 تدوین و خروجی (پست ${i}) - ${brand}`,
-          date: formatDateLocal(editDate),
+          date: editShamsi,
           fee: 1000000,
           role: "editor",
           assignee: null
         });
 
-        // انتشار پست - مخصوص مدیر با ۳ وضعیت (انجام شد | کنسل شد | هنوز انجام نشده)
         calculatedTasks.push({
           type: "INSTAGRAM_POST",
           title: `📱 انتشار پست ${i} - ${brand}`,
-          date: formatDateLocal(pubDate),
+          date: pubShamsi,
           fee: 0,
           role: "admin",
           assignee: ADMIN_ID,
@@ -573,12 +510,10 @@
       const postTasks = calculatedTasks.filter(t => t.type === "INSTAGRAM_POST");
 
       containerTasks.innerHTML = offishTasks.map((t, idx) => {
-        const parts = t.date.split('-');
-        const shamsiStr = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.date;
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ شمسی: <strong>${shamsiStr}</strong></small><br>
+            <small>📅 تاریخ شمسی: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
             ${t.fee > 0 ? `
               <label>دستمزد (تومان):</label>
               <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
@@ -588,12 +523,10 @@
       }).join("");
 
       containerPosts.innerHTML = postTasks.map(t => {
-        const parts = t.date.split('-');
-        const shamsiStr = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.date;
         return `
           <div class="post-item">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ انتشار: <strong>${shamsiStr}</strong></small><br>
+            <small>📅 تاریخ انتشار: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
             <small style="color: var(--warning);">👤 برنامه انتشار: مخصوص مدیر (وضعیت: ⏳ هنوز انجام نشده)</small>
           </div>
         `;
