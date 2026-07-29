@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (v4.5)</title>
+  <title>مدیریت استودیو کنج (v5.0)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -14,6 +14,7 @@
       --muted: #94a3b8;
       --success: #22c55e;
       --danger: #ef4444;
+      --warning: #f59e0b;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -30,7 +31,7 @@
       margin-bottom: 16px;
       border: 1px solid #334155;
     }
-    h2, h3 { margin-top: 0; color: #fff; }
+    h2, h3, h4 { margin-top: 0; color: #fff; }
     label { display: block; margin-top: 12px; font-size: 0.9em; color: var(--muted); }
     input, select, textarea {
       width: 100%;
@@ -47,9 +48,7 @@
       gap: 8px;
       margin-top: 4px;
     }
-    .date-row select {
-      flex: 1;
-    }
+    .date-row select { flex: 1; }
     button {
       width: 100%;
       padding: 12px;
@@ -76,6 +75,14 @@
       border-right: 3px solid var(--accent);
       padding-right: 10px;
       margin-bottom: 10px;
+    }
+    .post-item {
+      border-right: 3px solid var(--warning);
+      padding-right: 10px;
+      margin-bottom: 10px;
+      background: rgba(245, 158, 11, 0.05);
+      padding: 8px;
+      border-radius: 6px;
     }
     .tabs {
       display: flex;
@@ -123,7 +130,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v4.5)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.0)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -203,8 +210,14 @@
       <button onclick="generateSchedule()">⚡️ تولید پیش‌نویس برنامه</button>
 
       <div id="preview-section" class="hidden" style="margin-top: 16px;">
-        <h3>🔍 پیش‌نمایش جدول زمان‌بندی (تاریخ‌های شمسی)</h3>
+        <h3>🔍 پیش‌نمایش جدول آفیش‌ها و برنامه‌ریزی انتشار</h3>
+        
+        <h4>🎥 ۱. آفیش‌ها و فرآیند تولید محتوا (مخصوص تیم)</h4>
         <div id="generated-tasks"></div>
+
+        <h4 style="margin-top: 16px; color: var(--warning);">📱 ۲. جدول تقویم انتشار پست‌های اینستاگرام (مخصوص مدیریت)</h4>
+        <div id="generated-posts"></div>
+
         <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی و ارسال به ربات</button>
       </div>
     </div>
@@ -265,20 +278,21 @@
       updateSummary();
     }
 
+    // الگوریتم دقیق تبدیل شمسی به میلادی
     function jalaliToGregorian(jy, jm, jd) {
       jy = Number(jy);
       jm = Number(jm);
       jd = Number(jd);
-      let gy = (jy > 979) ? 1600 : 621;
-      jy -= (jy > 979) ? 979 : 0;
+      let gy = (jy <= 979) ? 621 : 1600;
+      jy = (jy <= 979) ? jy : jy - 979;
       let days = (365 * jy) + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4);
-      const j_d_m = [0, 31, 62, 93, 124, 155, 186, 216, 247, 277, 308, 338];
-      days += j_d_m[jm - 1] + jd - 1;
+      const sal_a = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+      for (let i = 0; i < jm; ++i) days += sal_a[i];
+      days += jd - 1;
       gy += 400 * Math.floor(days / 146097);
       days %= 146097;
       if (days > 36524) {
-        days--;
-        gy += 100 * Math.floor(days / 36524);
+        gy += 100 * Math.floor(--days / 36524);
         days %= 36524;
         if (days >= 365) days++;
       }
@@ -288,26 +302,35 @@
         gy += Math.floor((days - 1) / 365);
         days = (days - 1) % 365;
       }
-      let gd = days + 1;
-      const sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-      let gm = 0;
-      while (gm < 13 && gd > sal_a[gm]) {
-        gd -= sal_a[gm];
+      let gd = days + 1 + 79;
+      const sal_g = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      let gm = 1;
+      while (gm < 13 && gd > sal_g[gm]) {
+        gd -= sal_g[gm];
         gm++;
+      }
+      if (gm > 12) {
+        gm -= 12;
+        gy += 1;
       }
       return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
     }
 
+    // الگوریتم دقیق تبدیل میلادی به شمسی
     function gregorianToJalali(gy, gm, gd) {
       gy = Number(gy);
       gm = Number(gm);
       gd = Number(gd);
       if (!gy || !gm || !gd || isNaN(gy) || isNaN(gm) || isNaN(gd)) return "تاریخ نامشخص";
       const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-      let jy = (gy > 1600) ? 979 : 0;
-      gy -= (gy > 1600) ? 1600 : 621;
+      let jy = (gy <= 1600) ? 0 : 979;
+      gy = (gy <= 1600) ? gy - 621 : gy - 1600;
       let gy2 = (gm > 2) ? (gy + 1) : gy;
-      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1;
+      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1 - 79;
+      if (days < 0) {
+        days += 365;
+        gy -= 1;
+      }
       jy += 33 * Math.floor(days / 12053);
       days %= 12053;
       jy += 4 * Math.floor(days / 1461);
@@ -316,8 +339,13 @@
         jy += Math.floor((days - 1) / 365);
         days = (days - 1) % 365;
       }
-      let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-      let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+      const sal_a = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+      let jm = 1;
+      while (jm < 13 && days >= sal_a[jm]) {
+        days -= sal_a[jm];
+        jm++;
+      }
+      let jd = days + 1;
       return `${jd} ${SHAMSI_MONTHS[jm - 1]} ${jy}`;
     }
 
@@ -522,13 +550,15 @@
           assignee: null
         });
 
+        // انتشار پست - مخصوص مدیر با ۳ وضعیت (انجام شد | کنسل شد | هنوز انجام نشده)
         calculatedTasks.push({
-          type: "PUBLISH_POST",
-          title: `📅 انتشار پست ${i} - ${brand}`,
+          type: "INSTAGRAM_POST",
+          title: `📱 انتشار پست ${i} - ${brand}`,
           date: formatDateLocal(pubDate),
           fee: 0,
           role: "admin",
-          assignee: ADMIN_ID
+          assignee: ADMIN_ID,
+          status: "PENDING"
         });
       }
 
@@ -536,8 +566,13 @@
     }
 
     function renderPreview() {
-      const container = document.getElementById("generated-tasks");
-      container.innerHTML = calculatedTasks.map((t, idx) => {
+      const containerTasks = document.getElementById("generated-tasks");
+      const containerPosts = document.getElementById("generated-posts");
+
+      const offishTasks = calculatedTasks.filter(t => t.type !== "INSTAGRAM_POST");
+      const postTasks = calculatedTasks.filter(t => t.type === "INSTAGRAM_POST");
+
+      containerTasks.innerHTML = offishTasks.map((t, idx) => {
         const parts = t.date.split('-');
         const shamsiStr = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.date;
         return `
@@ -551,6 +586,19 @@
           </div>
         `;
       }).join("");
+
+      containerPosts.innerHTML = postTasks.map(t => {
+        const parts = t.date.split('-');
+        const shamsiStr = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.date;
+        return `
+          <div class="post-item">
+            <strong>${t.title}</strong><br>
+            <small>📅 تاریخ انتشار: <strong>${shamsiStr}</strong></small><br>
+            <small style="color: var(--warning);">👤 برنامه انتشار: مخصوص مدیر (وضعیت: ⏳ هنوز انجام نشده)</small>
+          </div>
+        `;
+      }).join("");
+
       document.getElementById("preview-section").classList.remove("hidden");
     }
 
