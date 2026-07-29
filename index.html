@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (نسخه Shamsi Native v4.0)</title>
+  <title>مدیریت استودیو کنج (v4.5)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -123,7 +123,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v4.0)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v4.5)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -203,7 +203,7 @@
       <button onclick="generateSchedule()">⚡️ تولید پیش‌نویس برنامه</button>
 
       <div id="preview-section" class="hidden" style="margin-top: 16px;">
-        <h3>🔍 پیش‌نمایش جدول زمان‌بندی (فاصله ۴ روزه)</h3>
+        <h3>🔍 پیش‌نمایش جدول زمان‌بندی (تاریخ‌های شمسی)</h3>
         <div id="generated-tasks"></div>
         <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی و ارسال به ربات</button>
       </div>
@@ -248,8 +248,8 @@
         yearSel.innerHTML += `<option value="${y}">${y}</option>`;
       });
 
-      daySel.value = 6;
-      monthSel.value = 5;
+      daySel.value = 1;
+      monthSel.value = 5; // مرداد
       yearSel.value = 1405;
 
       const updateSummary = () => {
@@ -296,6 +296,29 @@
         gm++;
       }
       return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+    }
+
+    function gregorianToJalali(gy, gm, gd) {
+      gy = Number(gy);
+      gm = Number(gm);
+      gd = Number(gd);
+      if (!gy || !gm || !gd || isNaN(gy) || isNaN(gm) || isNaN(gd)) return "تاریخ نامشخص";
+      const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+      let jy = (gy > 1600) ? 979 : 0;
+      gy -= (gy > 1600) ? 1600 : 621;
+      let gy2 = (gm > 2) ? (gy + 1) : gy;
+      let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + g_d_m[gm - 1] + gd - 1;
+      jy += 33 * Math.floor(days / 12053);
+      days %= 12053;
+      jy += 4 * Math.floor(days / 1461);
+      days %= 1461;
+      if (days > 365) {
+        jy += Math.floor((days - 1) / 365);
+        days = (days - 1) % 365;
+      }
+      let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+      let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+      return `${jd} ${SHAMSI_MONTHS[jm - 1]} ${jy}`;
     }
 
     function switchTab(tab) {
@@ -369,10 +392,12 @@
           return;
         }
         container.innerHTML = data.tasks.map(t => {
+          const parts = t.scheduled_date.split('-');
+          const jDate = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.scheduled_date;
           return `
             <div class="task-item">
               <strong>${t.title}</strong><br>
-              <small>📅 تاریخ: ${t.scheduled_date} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
+              <small>📅 تاریخ: ${jDate} (${t.scheduled_date}) | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
               <small>وضعیت: ${t.status}</small>
             </div>
           `;
@@ -513,10 +538,12 @@
     function renderPreview() {
       const container = document.getElementById("generated-tasks");
       container.innerHTML = calculatedTasks.map((t, idx) => {
+        const parts = t.date.split('-');
+        const shamsiStr = (parts.length === 3) ? gregorianToJalali(parts[0], parts, parts) : t.date;
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ: ${t.date}</small><br>
+            <small>📅 تاریخ شمسی: <strong>${shamsiStr}</strong></small><br>
             ${t.fee > 0 ? `
               <label>دستمزد (تومان):</label>
               <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
