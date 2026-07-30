@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (v5.2)</title>
+  <title>مدیریت استودیو کنج (v5.3)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -130,7 +130,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.2)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.3)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -279,9 +279,13 @@
     }
 
     function addShamsiDays(y, m, d, daysToAdd) {
-      y = parseInt(y, 10);
-      m = parseInt(m, 10);
-      d = parseInt(d, 10);
+      y = parseInt(y, 10) || 1405;
+      m = parseInt(m, 10) || 1;
+      d = parseInt(d, 10) || 1;
+      daysToAdd = parseInt(daysToAdd, 10) || 0;
+
+      if (m < 1 || m > 12) m = 1;
+      if (d < 1 || d > 31) d = 1;
 
       const monthLengths = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
 
@@ -298,12 +302,13 @@
     }
 
     function formatShamsiLabel(shamsiStr) {
-      if (!shamsiStr) return "مشخص نشده";
+      if (!shamsiStr || typeof shamsiStr !== 'string') return "مشخص نشده";
       const parts = shamsiStr.split('/');
       if (parts.length !== 3) return shamsiStr;
-      const d = parseInt(parts, 10);
-      const m = parseInt(parts, 10);
       const y = parts[0];
+      const m = parseInt(parts, 10);
+      const d = parseInt(parts, 10);
+      if (isNaN(m) || m < 1 || m > 12) return shamsiStr;
       return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
     }
 
