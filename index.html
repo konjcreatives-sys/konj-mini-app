@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (v5.3)</title>
+  <title>مدیریت استودیو کنج (v6.0)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -130,7 +130,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v5.3)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v6.0)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -146,19 +146,19 @@
       <label>نام برند / کارفرما:</label>
       <input type="text" id="single_brand" placeholder="مثال: برند نایک">
 
-      <label>عنوان / موضوع آفیش:</label>
-      <input type="text" id="single_title" placeholder="مثال: تصویربرداری تیزر تبلیغاتی">
+      <label>عنوان / موضوع آفیش یا پروژه:</label>
+      <input type="text" id="single_title" placeholder="مثال: تصویربرداری تیزر / تدوین ویدیو">
 
       <label>تخصص مورد نیاز:</label>
-      <select id="single_role">
+      <select id="single_role" onchange="updateSingleDateLabel()">
         <option value="filmmaker">🎥 تصویربردار / فیلم‌ساز</option>
         <option value="photographer">📷 عکاس</option>
-        <option value="editor">🎬 تدوین‌گر</option>
-        <option value="designer">🎨 طراح گرافیک</option>
-        <option value="ai_artist">🤖 هنرمند AI</option>
+        <option value="editor">🎬 تدوین‌گر (نیازمند ددلاین)</option>
+        <option value="designer">🎨 طراح گرافیک (نیازمند ددلاین)</option>
+        <option value="ai_artist">🤖 هنرمند AI (نیازمند ددلاین)</option>
       </select>
 
-      <label>📅 انتخاب تاریخ شمسی آفیش:</label>
+      <label id="single_date_label">📅 انتخاب تاریخ شمسی آفیش:</label>
       <div class="date-row">
         <select id="single_shamsi_day"></select>
         <select id="single_shamsi_month"></select>
@@ -166,10 +166,10 @@
       </div>
       <span id="single_date_summary" class="jalali-badge"></span>
 
-      <label>ساعت شروع:</label>
+      <label>ساعت شروع / تحویل:</label>
       <input type="time" id="single_time" value="14:00">
 
-      <label>محل / لوکیشن:</label>
+      <label>محل / لوکیشن (برای آفیش‌های حضوری):</label>
       <input type="text" id="single_location" placeholder="مثال: استودیو کنج / جزیره کیش">
 
       <label>انتخاب مجری تسک:</label>
@@ -177,7 +177,7 @@
         <option value="">🔍 تخصیص بعداً توسط مدیر در ربات</option>
       </select>
 
-      <label>دستمزد آفیش (تومان):</label>
+      <label>دستمزد آفیش / تدوین (تومان):</label>
       <input type="number" id="single_fee" value="1500000" step="100000">
 
       <button id="single-submit-btn" onclick="submitSingleProject()" style="background: var(--success);">🚀 ثبت نهایی پروژه تکی</button>
@@ -237,6 +237,7 @@
     let calculatedTasks = [];
 
     const SHAMSI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+    const POST_PRODUCTION_ROLES = ["editor", "designer", "ai_artist"];
 
     function populateShamsiDropdowns(prefix) {
       const daySel = document.getElementById(`${prefix}_shamsi_day`);
@@ -268,7 +269,10 @@
       const updateSummary = () => {
         const summaryEl = document.getElementById(`${prefix}_date_summary`);
         if (summaryEl) {
-          summaryEl.innerText = `📌 تاریخ انتخابی: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+          const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";
+          const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);
+          const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";
+          summaryEl.innerText = `${prefixLabel}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
         }
       };
 
@@ -276,6 +280,28 @@
       monthSel.onchange = updateSummary;
       yearSel.onchange = updateSummary;
       updateSummary();
+    }
+
+    function updateSingleDateLabel() {
+      const role = document.getElementById("single_role").value;
+      const labelEl = document.getElementById("single_date_label");
+      const isPostProd = POST_PRODUCTION_ROLES.includes(role);
+
+      if (isPostProd) {
+        labelEl.innerText = "⏳ انتخاب مهلت تحویل / ددلاین شمسی:";
+      } else {
+        labelEl.innerText = "📅 انتخاب تاریخ شمسی آفیش:";
+      }
+
+      const daySel = document.getElementById("single_shamsi_day");
+      const monthSel = document.getElementById("single_shamsi_month");
+      const yearSel = document.getElementById("single_shamsi_year");
+      const summaryEl = document.getElementById("single_date_summary");
+
+      if (summaryEl && daySel && monthSel && yearSel) {
+        const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";
+        summaryEl.innerText = `${prefixLabel}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+      }
     }
 
     function addShamsiDays(y, m, d, daysToAdd) {
@@ -336,6 +362,7 @@
         document.getElementById("admin-view").classList.remove("hidden");
         populateShamsiDropdowns("single");
         populateShamsiDropdowns("monthly");
+        updateSingleDateLabel();
         await fetchMembers();
       } else {
         document.getElementById("member-view").classList.remove("hidden");
@@ -386,7 +413,7 @@
           return `
             <div class="task-item">
               <strong>${t.title}</strong><br>
-              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
+              <small>📅 تاریخ/ددلاین: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
               <small>وضعیت: ${t.status}</small>
             </div>
           `;
@@ -515,10 +542,12 @@
       const postTasks = calculatedTasks.filter(t => t.type === "INSTAGRAM_POST");
 
       containerTasks.innerHTML = offishTasks.map((t, idx) => {
+        const isEdit = t.type === "EDIT_TASK";
+        const datePrefix = isEdit ? "⏳ مهلت تحویل (ددلاین)" : "📅 تاریخ شمسی آفیش";
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ شمسی: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
+            <small>${datePrefix}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
             ${t.fee > 0 ? `
               <label>دستمزد (تومان):</label>
               <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
