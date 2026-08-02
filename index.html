@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدیریت استودیو کنج (v6.0)</title>
+  <title>مدیریت استودیو کنج (v7.0)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -76,6 +76,12 @@
       padding-right: 10px;
       margin-bottom: 10px;
     }
+    .task-completed {
+      border-right: 3px solid var(--success) !important;
+      background: rgba(34, 197, 94, 0.05);
+      padding: 8px;
+      border-radius: 6px;
+    }
     .post-item {
       border-right: 3px solid var(--warning);
       padding-right: 10px;
@@ -130,7 +136,7 @@
 
   <div id="admin-view" class="hidden">
     <div class="card">
-      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v6.0)</small></h2>
+      <h2>👑 پنل مدیریت استودیو کنج <small style="font-size:0.5em; color:var(--success)">(v7.0)</small></h2>
       <div id="status-bar" class="badge">در حال بررسی اتصال...</div>
     </div>
 
@@ -329,13 +335,18 @@
 
     function formatShamsiLabel(shamsiStr) {
       if (!shamsiStr || typeof shamsiStr !== 'string') return "مشخص نشده";
-      const parts = shamsiStr.split('/');
-      if (parts.length !== 3) return shamsiStr;
-      const y = parts[0];
-      const m = parseInt(parts, 10);
-      const d = parseInt(parts, 10);
-      if (isNaN(m) || m < 1 || m > 12) return shamsiStr;
-      return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
+      if (shamsiStr.includes("/")) {
+        const parts = shamsiStr.split('/');
+        if (parts.length === 3) {
+          const y = parts[0];
+          const m = parseInt(parts, 10);
+          const d = parseInt(parts, 10);
+          if (!isNaN(m) && m >= 1 && m <= 12) {
+            return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
+          }
+        }
+      }
+      return shamsiStr;
     }
 
     function switchTab(tab) {
@@ -409,15 +420,43 @@
           container.innerText = "هیچ آفیش یا تسک فعالی برای شما ثبت نشده است.";
           return;
         }
-        container.innerHTML = data.tasks.map(t => {
-          return `
+
+        const activeTasks = data.tasks.filter(t => t.status !== 'COMPLETED');
+        const completedTasks = data.tasks.filter(t => t.status === 'COMPLETED');
+
+        const STATUS_MAP = {
+          'COMPLETED': '✅ تکمیل و تسویه‌شده',
+          'ACCEPTED': '⏳ در حال انجام',
+          'PENDING_ADMIN_REVIEW': '🔍 منتظر بررسی مدیریت',
+          'PENDING_ACCEPTANCE': '📩 منتظر تایید اولیه شما'
+        };
+
+        let html = "";
+        if (activeTasks.length > 0) {
+          html += `<h4>⏳ تسک‌های فعال شما:</h4>`;
+          html += activeTasks.map(t => `
             <div class="task-item">
               <strong>${t.title}</strong><br>
               <small>📅 تاریخ/ددلاین: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || 'مشخص نشده'}</small><br>
-              <small>وضعیت: ${t.status}</small>
+              <small>وضعیت: <strong>${STATUS_MAP[t.status] || t.status}</strong></small>
             </div>
-          `;
-        }).join("");
+          `).join("");
+        } else {
+          html += `<p>هیچ تسک فعالی در حال حاضر ندارید.</p>`;
+        }
+
+        if (completedTasks.length > 0) {
+          html += `<h4 style="margin-top: 16px; color: var(--success);">🏁 بایگانی تسک‌های اتمام‌یافته و تسویه‌شده:</h4>`;
+          html += completedTasks.map(t => `
+            <div class="task-item task-completed">
+              <strong>${t.title}</strong><br>
+              <small>📅 تاریخ/ددلاین: ${formatShamsiLabel(t.scheduled_date)}</small><br>
+              <small style="color: var(--success);">وضعیت: <strong>✅ تکمیل و تسویه‌شده</strong></small>
+            </div>
+          `).join("");
+        }
+
+        container.innerHTML = html;
       } catch (err) {
         document.getElementById("member-tasks-list").innerText = "خطا در دریافت لیست تسک‌ها.";
       }
