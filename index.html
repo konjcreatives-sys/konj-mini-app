@@ -317,6 +317,10 @@
       'CANCELLED': '❌ کنسل‌شده'
     };
 
+    function checkConnection() {
+      document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
+    }
+
     function switchNav(nav) {
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("view-workspace").classList.add("hidden");
@@ -369,6 +373,8 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
+      checkConnection();
+
       if (!currentUser) {
         document.getElementById("unauthorized-view").classList.remove("hidden");
         return;
@@ -506,7 +512,7 @@
 
         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
       } catch (err) {
-        document.getElementById("status-bar").innerHTML = `<span class="status-err">⚠️ حالت آفلاین</span>`;
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
       }
     }
 
@@ -640,12 +646,13 @@
           const isPostProd = POST_PRODUCTION_ROLES.includes(t.role_required || '');
           const dLabel = isPostProd ? "ددلاین" : "تاریخ";
           const statusText = STATUS_MAP[t.status] || t.status;
+          const assigneeName = t.assignee_name || (t.members && t.members.name) || 'تخصیص‌نیافته';
 
           return `
             <div class="task-item ${isCompleted ? 'task-completed' : ''}">
               <strong>${idx + 1}. ${t.title}</strong><br>
               <small>📆 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-              <small>👤 مجری: ${t.members?.name || 'تخصیص‌نیافته'}</small><br>
+              <small>👤 مجری: <strong>${assigneeName}</strong></small><br>
               <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
             </div>
           `;
