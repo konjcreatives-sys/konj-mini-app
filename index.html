@@ -31,7 +31,7 @@
       margin-bottom: 16px;
       border: 1px solid #334155;
     }
-    h2, h3, h4 { margin-top: 0; color: #fff; }
+    h2, h3, h4, h5 { margin-top: 0; color: #fff; }
     label { display: block; margin-top: 12px; font-size: 0.9em; color: var(--muted); }
     input, select, textarea {
       width: 100%;
@@ -51,13 +51,13 @@
     .date-row select { flex: 1; }
     button {
       width: 100%;
-      padding: 12px;
+      padding: 10px 12px;
       background: var(--accent);
       color: white;
       border: none;
       border-radius: 8px;
       font-weight: bold;
-      margin-top: 16px;
+      margin-top: 12px;
       cursor: pointer;
     }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -76,7 +76,7 @@
       padding-right: 10px;
       margin-bottom: 12px;
       background: rgba(30, 41, 59, 0.7);
-      padding: 10px;
+      padding: 12px;
       border-radius: 8px;
     }
     .task-completed {
@@ -143,6 +143,23 @@
       margin-top: 6px;
       display: block;
       font-weight: bold;
+    }
+    .btn-action-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .btn-action-row button {
+      margin-top: 0;
+      font-size: 0.78em;
+      padding: 6px 8px;
+    }
+    .tasks-subbox {
+      margin-top: 10px;
+      padding: 10px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #334155;
     }
   </style>
 </head>
@@ -269,9 +286,9 @@
     </div>
   </div>
 
-  <!-- ۳. اتاق فرمان و بایگانی پروژه‌ها (مدیریت) -->
+  <!-- ۳. اتاق فرمان و ویرایش مدیریت (مدیریت) -->
   <div id="view-command" class="card hidden">
-    <h3>🛠 اتاق فرمان و مدیریت پروژه‌ها</h3>
+    <h3>🛠 اتاق فرمان و مدیریت کامل پروژه‌ها</h3>
     
     <div class="sub-tabs">
       <button id="cmd-active-btn" class="sub-btn active" onclick="switchCmdSub('active')">🟢 پروژه‌های فعال</button>
@@ -304,6 +321,7 @@
     let rawUserTasks = [];
     let rawAllProjects = [];
     let rawAllTasks = [];
+    let expandedProjects = {};
 
     const SHAMSI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
     const POST_PRODUCTION_ROLES = ["editor", "designer", "ai_artist"];
@@ -312,7 +330,7 @@
       'COMPLETED': '✅ تکمیل و تسویه‌شده',
       'ACCEPTED': '⏳ در حال انجام',
       'PENDING_ADMIN_REVIEW': '🔍 منتظر بررسی مدیریت',
-      'PENDING_ACCEPTANCE': '📩 منتظر تایید اولیه شما',
+      'PENDING_ACCEPTANCE': '📩 منتظر تایید اولیه مجری',
       'UNASSIGNED': '⬜️ بدون مجری',
       'CANCELLED': '❌ کنسل‌شده'
     };
@@ -389,16 +407,8 @@
         updateSingleDateLabel();
         await fetchMembers();
       } else {
-        document.getElementById("member-greeting").innerText = `سلام ${currentUser.first_name || ''} عزیز، خوش آمدید.`;
-      }
-
-      switchNav('workspace');
-    });
-
-    function populateShamsiDropdowns(prefix) {
-      const daySel = document.getElementById(`${prefix}_shamsi_day`);
-      const monthSel = document.getElementById(`${prefix}_shamsi_month`);
-      const yearSel = document.getElementById(`${prefix}_shamsi_year`);
+        document.getElementById("member-greeting").innerText = `سلام ${currentUser.first_name \vert{}\vert{} ''} عزیز، خوش آمدید.`;       }        switchNav('workspace');     });      function populateShamsiDropdowns(prefix) {       const daySel = document.getElementById(`${prefix}_shamsi_day`);
+      const monthSel = document.getElementById(`${prefix}_shamsi_month`);       const yearSel = document.getElementById(`${prefix}_shamsi_year`);
 
       if (!daySel || !monthSel || !yearSel) return;
 
@@ -422,48 +432,7 @@
       yearSel.value = 1405;
 
       const updateSummary = () => {
-        const summaryEl = document.getElementById(`${prefix}_date_summary`);
-        if (summaryEl) {
-          const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";
-          const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);
-          const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";
-          summaryEl.innerText = `${prefixLabel}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
-        }
-      };
-
-      daySel.onchange = updateSummary;
-      monthSel.onchange = updateSummary;
-      yearSel.onchange = updateSummary;
-      updateSummary();
-    }
-
-    function updateSingleDateLabel() {
-      const role = document.getElementById("single_role").value;
-      const labelEl = document.getElementById("single_date_label");
-      const isPostProd = POST_PRODUCTION_ROLES.includes(role);
-
-      labelEl.innerText = isPostProd ? "⏳ انتخاب مهلت تحویل / ددلاین شمسی:" : "📅 انتخاب تاریخ شمسی آفیش:";
-
-      const daySel = document.getElementById("single_shamsi_day");
-      const monthSel = document.getElementById("single_shamsi_month");
-      const yearSel = document.getElementById("single_shamsi_year");
-      const summaryEl = document.getElementById("single_date_summary");
-
-      if (summaryEl && daySel && monthSel && yearSel) {
-        summaryEl.innerText = `${isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش"}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
-      }
-    }
-
-    function formatShamsiLabel(shamsiStr) {
-      if (!shamsiStr || typeof shamsiStr !== 'string') return "مشخص نشده";
-      if (shamsiStr.includes("/")) {
-        const parts = shamsiStr.split('/');
-        if (parts.length === 3) {
-          const y = parts[0];
-          const m = parseInt(parts, 10);
-          const d = parseInt(parts, 10);
-          if (!isNaN(m) && m >= 1 && m <= 12) {
-            return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
+        const summaryEl = document.getElementById(`${prefix}_date_summary`);         if (summaryEl) {           const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";           const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);           const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";           summaryEl.innerText = `${prefixLabel}: ${daySel.value}${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;         }       };        daySel.onchange = updateSummary;       monthSel.onchange = updateSummary;       yearSel.onchange = updateSummary;       updateSummary();     }      function updateSingleDateLabel() {       const role = document.getElementById("single_role").value;       const labelEl = document.getElementById("single_date_label");       const isPostProd = POST_PRODUCTION_ROLES.includes(role);        labelEl.innerText = isPostProd ? "⏳ انتخاب مهلت تحویل / ددلاین شمسی:" : "📅 انتخاب تاریخ شمسی آفیش:";        const daySel = document.getElementById("single_shamsi_day");       const monthSel = document.getElementById("single_shamsi_month");       const yearSel = document.getElementById("single_shamsi_year");       const summaryEl = document.getElementById("single_date_summary");        if (summaryEl && daySel && monthSel && yearSel) {         summaryEl.innerText = `${isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش"}: ${daySel.value}${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;       }     }      function formatShamsiLabel(shamsiStr) {       if (!shamsiStr \vert{}\vert{} typeof shamsiStr !== 'string') return "مشخص نشده";       if (shamsiStr.includes("/")) {         const parts = shamsiStr.split('/');         if (parts.length === 3) {           const y = parts[0];           const m = parseInt(parts, 10);           const d = parseInt(parts, 10);           if (!isNaN(m) && m >= 1 && m <= 12) {             return `${d} ${SHAMSI_MONTHS[m - 1]}${y}`;
           }
         }
       }
@@ -490,37 +459,12 @@
           y += 1;
         }
       }
-      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
-    }
-
-    async function fetchMembers() {
-      try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
+      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;     }      async function fetchMembers() {       try {         const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
           headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'X-Telegram-Init-Data': tg.initData || ''
-          }
-        });
-        const data = await res.json();
-        activeMembers = data.members || [];
-        
-        const select = document.getElementById("single_assignee");
-        select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
-        activeMembers.forEach(m => {
-          select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,             'X-Telegram-Init-Data': tg.initData \vert{}\vert{} ''           }         });         const data = await res.json();         activeMembers = data.members \vert{}\vert{} [];                  const select = document.getElementById("single_assignee");         select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';         activeMembers.forEach(m => {           select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
         });
 
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
-      } catch (err) {
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
-      }
-    }
-
-    async function fetchMemberTasks() {
-      try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${currentUser.id}`, {
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;       } catch (err) {         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;       }     }      async function fetchMemberTasks() {       try {         const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${currentUser.id}`, {           headers: {             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'X-Telegram-Init-Data': tg.initData || ''
           }
         });
@@ -548,15 +492,41 @@
 
       container.innerHTML = filtered.map(t => {
         const isCompleted = t.status === 'COMPLETED';
+        const isPendingReview = t.status === 'PENDING_ADMIN_REVIEW';
         const statusText = STATUS_MAP[t.status] || t.status;
         return `
           <div class="task-item ${isCompleted ? 'task-completed' : ''}">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-            <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
+            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+            <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>${(!isCompleted && !isPendingReview) ? `
+              <button onclick="finishTaskByMember('${t.id}')" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
+                🏁 اعلام اتمام این تسک
+              </button>
+            ` : ''}
           </div>
         `;
       }).join("");
+    }
+
+    async function finishTaskByMember(taskId) {
+      if (!confirm("آیا از اعلام اتمام این تسک به مدیریت اطمینان دارید؟")) return;
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=finish_task_api&task_id=${taskId}&chat_id=${currentUser.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        if (res.ok) {
+          alert("پروژه به اتمام رسید و جهت تایید نهایی برای مدیریت ارسال شد.");
+          await fetchMemberTasks();
+        } else {
+          alert("خطا در ثبت اتمام پروژه.");
+        }
+      } catch (e) {
+        alert("خطا در ارتباط با سرور.");
+      }
     }
 
     async function fetchCommandProjects() {
@@ -593,17 +563,173 @@
 
       container.innerHTML = filtered.map(p => {
         const isCompleted = p.status === 'COMPLETED';
+        const isExpanded = expandedProjects[p.id] || false;
         return `
           <div class="task-item ${isCompleted ? 'task-completed' : ''}">
             <strong>📁 ${p.client_name}</strong> <small>(${p.service_type || 'پروژه'})</small><br>
             <small>📅 ددلاین/تاریخ: ${formatShamsiLabel(p.deadline)}</small><br>
             <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'};">وضعیت: ${isCompleted ? '🏁 اتمام یافته (بایگانی)' : '🟢 فعال'}</small>
-            <button onclick="toggleProjectStatus('${p.id}')" style="padding: 6px; margin-top: 8px; font-size: 0.8em; background: #334155;">
-              ${isCompleted ? '🟢 خروج از بایگانی و فعال‌سازی' : '🏁 انتقال به بایگانی'}
-            </button>
+            
+            <div class="btn-action-row">
+              <button onclick="toggleProjectTasks('${p.id}')" style="background: var(--accent);">
+                ${isExpanded ? '🔽 بستن مدیریت تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها'}
+              </button>
+              <button onclick="toggleProjectStatus('${p.id}')" style="background: #334155;">
+                ${isCompleted ? '🟢 فعال‌سازی' : '🏁 بایگانی'}
+              </button>
+              <button onclick="deleteProject('${p.id}')" style="background: var(--danger);">
+                🗑 حذف کل
+              </button>
+            </div>
+
+            <div id="project-tasks-box-${p.id}" class="${isExpanded ? '' : 'hidden'} tasks-subbox">
+              در حال دریافت تسک‌های پروژه...
+            </div>
           </div>
         `;
       }).join("");
+
+      // Render tasks for expanded projects
+      Object.keys(expandedProjects).forEach(pid => {
+        if (expandedProjects[pid]) {
+          loadProjectTasksInBox(pid);
+        }
+      });
+    }
+
+    async function toggleProjectTasks(projectId) {
+      expandedProjects[projectId] = !expandedProjects[projectId];
+      const subbox = document.getElementById(`project-tasks-box-${projectId}`);
+      if (subbox) {
+        if (expandedProjects[projectId]) {
+          subbox.classList.remove("hidden");
+          await loadProjectTasksInBox(projectId);
+        } else {
+          subbox.classList.add("hidden");
+        }
+      }
+    }
+
+    async function loadProjectTasksInBox(projectId) {
+      const subbox = document.getElementById(`project-tasks-box-${projectId}`);
+      if (!subbox) return;
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_project_tasks_api&project_id=${projectId}`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        const data = await res.json();
+        const tasks = data.tasks || [];
+
+        if (tasks.length === 0) {
+          subbox.innerText = "هیچ تسکی برای این پروژه یافت نشد.";
+          return;
+        }
+
+        let html = `<h5>📋 تسک‌های این پروژه:</h5>`;
+        tasks.forEach(t => {
+          const assigneeName = t.members?.name || 'تخصیص‌نیافته';
+          const statusLabel = STATUS_MAP[t.status] || t.status;
+
+          html += `
+            <div style="border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 8px;">
+              <strong>📌 ${t.title}</strong><br>
+              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+              <small>💰 دستمزد: <strong>${Number(t.fixed_fee \vert{}\vert{} 0).toLocaleString('fa-IR')} تومان</strong> \vert{} 👤 مجری: <strong>${assigneeName}</strong></small><br>
+              <small>وضعیت: <strong>${statusLabel}</strong></small>
+              
+              <div class="btn-action-row">
+                <button onclick="editTaskFee('${t.id}', '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
+                <button onclick="editTaskAssignee('${t.id}')" style="background: #334155;">👤 مجری</button>
+                <button onclick="toggleTaskStatus('${t.id}', '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
+                <button onclick="deleteTask('${t.id}', '${projectId}')" style="background: var(--danger);">🗑 حذف</button>
+              </div>
+            </div>
+          `;
+        });
+        subbox.innerHTML = html;
+      } catch (e) {
+        subbox.innerText = "خطا در دریافت تسک‌ها.";
+      }
+    }
+
+    async function editTaskFee(taskId, currentFee) {
+      const newFeeStr = prompt("لطفاً دستمزد جدید تسک را به تومان وارد کنید:", currentFee);
+      if (newFeeStr !== null) {
+        const newFee = parseInt(newFeeStr.replace(/,/g, ''), 10);
+        if (!isNaN(newFee) && newFee >= 0) {
+          await fetch(`${FUNCTION_URL}?action=update_task_fee_api&task_id=${taskId}&fee=${newFee}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'X-Telegram-Init-Data': tg.initData || ''
+            }
+          });
+          fetchCommandProjects();
+        }
+      }
+    }
+
+    async function editTaskAssignee(taskId) {
+      if (activeMembers.length === 0) {
+        alert("هیچ عضو فعالی یافت نشد.");
+        return;
+      }
+
+      let options = activeMembers.map((m, i) => `${i + 1}. ${m.name} (${m.chat_id})`).join("\n");
+      const choiceStr = prompt(`لطفاً شماره مجری جدید را انتخاب کنید:\n\n${options}`);
+      if (choiceStr) {
+        const choiceIdx = parseInt(choiceStr, 10) - 1;
+        if (!isNaN(choiceIdx) && activeMembers[choiceIdx]) {
+          const selectedMember = activeMembers[choiceIdx];
+          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'X-Telegram-Init-Data': tg.initData || ''
+            }
+          });
+          fetchCommandProjects();
+        }
+      }
+    }
+
+    async function toggleTaskStatus(taskId, projectId) {
+      await fetch(`${FUNCTION_URL}?action=toggle_task_status_api&task_id=${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'X-Telegram-Init-Data': tg.initData || ''
+        }
+      });
+      loadProjectTasksInBox(projectId);
+    }
+
+    async function deleteTask(taskId, projectId) {
+      if (!confirm("آیا از حذف این تسک اطمینان دارید؟")) return;
+      await fetch(`${FUNCTION_URL}?action=delete_task_api&task_id=${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'X-Telegram-Init-Data': tg.initData || ''
+        }
+      });
+      loadProjectTasksInBox(projectId);
+    }
+
+    async function deleteProject(projectId) {
+      if (!confirm("آیا از حذف کامل این پروژه و تمامی تسک‌های آن اطمینان دارید؟")) return;
+      await fetch(`${FUNCTION_URL}?action=delete_project_api&project_id=${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'X-Telegram-Init-Data': tg.initData || ''
+        }
+      });
+      fetchCommandProjects();
     }
 
     async function toggleProjectStatus(projectId) {
@@ -650,8 +776,8 @@
 
           return `
             <div class="task-item ${isCompleted ? 'task-completed' : ''}">
-              <strong>${idx + 1}. ${t.title}</strong><br>
-              <small>📆 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+              <strong>${idx + 1}.${t.title}</strong><br>
+              <small>📆 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
               <small>👤 مجری: <strong>${assigneeName}</strong></small><br>
               <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
             </div>
@@ -722,7 +848,7 @@
         const shootShamsi = addShamsiDays(sYear, sMonth, sDay, v * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
-          title: `🎥 آفیش تصویربرداری (${v + 1}) - ${brand}`,
+          title: `🎥 آفیش تصویربرداری (${v + 1}) -${brand}`,
           date: shootShamsi,
           fee: 1500000,
           role: "filmmaker",
@@ -734,7 +860,7 @@
         const photoShamsi = addShamsiDays(sYear, sMonth, sDay, p * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
-          title: `📸 آفیش عکاسی (${p + 1}) - ${brand}`,
+          title: `📸 آفیش عکاسی (${p + 1}) -${brand}`,
           date: photoShamsi,
           fee: 1200000,
           role: "photographer",
@@ -751,7 +877,7 @@
 
         calculatedTasks.push({
           type: "EDIT_TASK",
-          title: `🎬 تدوین و خروجی (پست ${i}) - ${brand}`,
+          title: `🎬 تدوین و خروجی (پست ${i}) -${brand}`,
           date: editShamsi,
           fee: 1000000,
           role: "editor",
@@ -760,7 +886,7 @@
 
         calculatedTasks.push({
           type: "INSTAGRAM_POST",
-          title: `📱 انتشار پست ${i} - ${brand}`,
+          title: `📱 انتشار پست ${i} -${brand}`,
           date: pubShamsi,
           fee: 0,
           role: "admin",
@@ -785,8 +911,7 @@
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
-            <small>${datePrefix}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
-            ${t.fee > 0 ? `
+            <small>${datePrefix}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>${t.fee > 0 ? `
               <label>دستمزد (تومان):</label>
               <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
             ` : ''}
