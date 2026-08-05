@@ -173,7 +173,7 @@
   <!-- هدر اصلی برنامه KONJ APP -->
   <div class="card" style="margin-bottom: 12px; padding: 12px; text-align: center;">
     <h2 style="margin:0; color: var(--accent); letter-spacing: 1px;">📱 KONJ APP</h2>
-    <div id="status-bar" class="badge" style="margin-top: 6px;">در حال بررسی اتصال...</div>
+    <div id="status-bar" class="badge" style="margin-top: 6px;">✅ سیستم آنلاین</div>
   </div>
 
   <!-- منوی اصلی ناوبری KONJ APP -->
@@ -407,8 +407,16 @@
         updateSingleDateLabel();
         await fetchMembers();
       } else {
-        document.getElementById("member-greeting").innerText = `سلام ${currentUser.first_name \vert{}\vert{} ''} عزیز، خوش آمدید.`;       }        switchNav('workspace');     });      function populateShamsiDropdowns(prefix) {       const daySel = document.getElementById(`${prefix}_shamsi_day`);
-      const monthSel = document.getElementById(`${prefix}_shamsi_month`);       const yearSel = document.getElementById(`${prefix}_shamsi_year`);
+        document.getElementById("member-greeting").innerText = `سلام ${currentUser.first_name || ''} عزیز، خوش آمدید.`;
+      }
+
+      switchNav('workspace');
+    });
+
+    function populateShamsiDropdowns(prefix) {
+      const daySel = document.getElementById(`${prefix}_shamsi_day`);
+      const monthSel = document.getElementById(`${prefix}_shamsi_month`);
+      const yearSel = document.getElementById(`${prefix}_shamsi_year`);
 
       if (!daySel || !monthSel || !yearSel) return;
 
@@ -432,7 +440,48 @@
       yearSel.value = 1405;
 
       const updateSummary = () => {
-        const summaryEl = document.getElementById(`${prefix}_date_summary`);         if (summaryEl) {           const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";           const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);           const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";           summaryEl.innerText = `${prefixLabel}: ${daySel.value}${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;         }       };        daySel.onchange = updateSummary;       monthSel.onchange = updateSummary;       yearSel.onchange = updateSummary;       updateSummary();     }      function updateSingleDateLabel() {       const role = document.getElementById("single_role").value;       const labelEl = document.getElementById("single_date_label");       const isPostProd = POST_PRODUCTION_ROLES.includes(role);        labelEl.innerText = isPostProd ? "⏳ انتخاب مهلت تحویل / ددلاین شمسی:" : "📅 انتخاب تاریخ شمسی آفیش:";        const daySel = document.getElementById("single_shamsi_day");       const monthSel = document.getElementById("single_shamsi_month");       const yearSel = document.getElementById("single_shamsi_year");       const summaryEl = document.getElementById("single_date_summary");        if (summaryEl && daySel && monthSel && yearSel) {         summaryEl.innerText = `${isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش"}: ${daySel.value}${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;       }     }      function formatShamsiLabel(shamsiStr) {       if (!shamsiStr \vert{}\vert{} typeof shamsiStr !== 'string') return "مشخص نشده";       if (shamsiStr.includes("/")) {         const parts = shamsiStr.split('/');         if (parts.length === 3) {           const y = parts[0];           const m = parseInt(parts, 10);           const d = parseInt(parts, 10);           if (!isNaN(m) && m >= 1 && m <= 12) {             return `${d} ${SHAMSI_MONTHS[m - 1]}${y}`;
+        const summaryEl = document.getElementById(`${prefix}_date_summary`);
+        if (summaryEl) {
+          const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";
+          const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);
+          const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";
+          summaryEl.innerText = `${prefixLabel}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+        }
+      };
+
+      daySel.onchange = updateSummary;
+      monthSel.onchange = updateSummary;
+      yearSel.onchange = updateSummary;
+      updateSummary();
+    }
+
+    function updateSingleDateLabel() {
+      const role = document.getElementById("single_role").value;
+      const labelEl = document.getElementById("single_date_label");
+      const isPostProd = POST_PRODUCTION_ROLES.includes(role);
+
+      labelEl.innerText = isPostProd ? "⏳ انتخاب مهلت تحویل / ددلاین شمسی:" : "📅 انتخاب تاریخ شمسی آفیش:";
+
+      const daySel = document.getElementById("single_shamsi_day");
+      const monthSel = document.getElementById("single_shamsi_month");
+      const yearSel = document.getElementById("single_shamsi_year");
+      const summaryEl = document.getElementById("single_date_summary");
+
+      if (summaryEl && daySel && monthSel && yearSel) {
+        summaryEl.innerText = `${isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش"}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+      }
+    }
+
+    function formatShamsiLabel(shamsiStr) {
+      if (!shamsiStr || typeof shamsiStr !== 'string') return "مشخص نشده";
+      if (shamsiStr.includes("/")) {
+        const parts = shamsiStr.split('/');
+        if (parts.length === 3) {
+          const y = parts[0];
+          const m = parseInt(parts, 10);
+          const d = parseInt(parts, 10);
+          if (!isNaN(m) && m >= 1 && m <= 12) {
+            return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
           }
         }
       }
@@ -459,12 +508,39 @@
           y += 1;
         }
       }
-      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;     }      async function fetchMembers() {       try {         const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
+      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+    }
+
+    async function fetchMembers() {
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
           headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,             'X-Telegram-Init-Data': tg.initData \vert{}\vert{} ''           }         });         const data = await res.json();         activeMembers = data.members \vert{}\vert{} [];                  const select = document.getElementById("single_assignee");         select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';         activeMembers.forEach(m => {           select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        const data = await res.json();
+        activeMembers = data.members || [];
+        
+        const select = document.getElementById("single_assignee");
+        select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
+        activeMembers.forEach(m => {
+          select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
         });
 
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;       } catch (err) {         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;       }     }      async function fetchMemberTasks() {       try {         const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${currentUser.id}`, {           headers: {             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
+      } catch (err) {
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
+      }
+    }
+
+    async function fetchMemberTasks() {
+      const container = document.getElementById("member-tasks-list");
+      container.innerText = "در حال دریافت تسک‌ها...";
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${currentUser.id}`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'X-Telegram-Init-Data': tg.initData || ''
           }
         });
@@ -472,7 +548,7 @@
         rawUserTasks = data.tasks || [];
         renderMemberTasks('active');
       } catch (err) {
-        document.getElementById("member-tasks-list").innerText = "خطا در دریافت لیست تسک‌ها.";
+        container.innerText = "در حال حاضر هیچ تسکی یافت نشد.";
       }
     }
 
@@ -497,8 +573,9 @@
         return `
           <div class="task-item ${isCompleted ? 'task-completed' : ''}">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-            <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>${(!isCompleted && !isPendingReview) ? `
+            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+            <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
+            ${(!isCompleted && !isPendingReview) ? `
               <button onclick="finishTaskByMember('${t.id}')" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
                 🏁 اعلام اتمام این تسک
               </button>
@@ -637,8 +714,8 @@
           html += `
             <div style="border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 8px;">
               <strong>📌 ${t.title}</strong><br>
-              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-              <small>💰 دستمزد: <strong>${Number(t.fixed_fee \vert{}\vert{} 0).toLocaleString('fa-IR')} تومان</strong> \vert{} 👤 مجری: <strong>${assigneeName}</strong></small><br>
+              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+              <small>💰 دستمزد: <strong>${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} تومان</strong> | 👤 مجری: <strong>${assigneeName}</strong></small><br>
               <small>وضعیت: <strong>${statusLabel}</strong></small>
               
               <div class="btn-action-row">
@@ -776,8 +853,8 @@
 
           return `
             <div class="task-item ${isCompleted ? 'task-completed' : ''}">
-              <strong>${idx + 1}.${t.title}</strong><br>
-              <small>📆 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> \vert{} ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+              <strong>${idx + 1}. ${t.title}</strong><br>
+              <small>📆 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
               <small>👤 مجری: <strong>${assigneeName}</strong></small><br>
               <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
             </div>
@@ -848,7 +925,7 @@
         const shootShamsi = addShamsiDays(sYear, sMonth, sDay, v * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
-          title: `🎥 آفیش تصویربرداری (${v + 1}) -${brand}`,
+          title: `🎥 آفیش تصویربرداری (${v + 1}) - ${brand}`,
           date: shootShamsi,
           fee: 1500000,
           role: "filmmaker",
@@ -860,7 +937,7 @@
         const photoShamsi = addShamsiDays(sYear, sMonth, sDay, p * 7);
         calculatedTasks.push({
           type: "OFFISH_SHOOT",
-          title: `📸 آفیش عکاسی (${p + 1}) -${brand}`,
+          title: `📸 آفیش عکاسی (${p + 1}) - ${brand}`,
           date: photoShamsi,
           fee: 1200000,
           role: "photographer",
@@ -877,7 +954,7 @@
 
         calculatedTasks.push({
           type: "EDIT_TASK",
-          title: `🎬 تدوین و خروجی (پست ${i}) -${brand}`,
+          title: `🎬 تدوین و خروجی (پست ${i}) - ${brand}`,
           date: editShamsi,
           fee: 1000000,
           role: "editor",
@@ -886,7 +963,7 @@
 
         calculatedTasks.push({
           type: "INSTAGRAM_POST",
-          title: `📱 انتشار پست ${i} -${brand}`,
+          title: `📱 انتشار پست ${i} - ${brand}`,
           date: pubShamsi,
           fee: 0,
           role: "admin",
@@ -911,7 +988,8 @@
         return `
           <div class="task-item">
             <strong>${t.title}</strong><br>
-            <small>${datePrefix}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>${t.fee > 0 ? `
+            <small>${datePrefix}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
+            ${t.fee > 0 ? `
               <label>دستمزد (تومان):</label>
               <input type="number" value="${t.fee}" onchange="calculatedTasks[${idx}].fee = Math.max(0, parseInt(this.value, 10) || 0)">
             ` : ''}
