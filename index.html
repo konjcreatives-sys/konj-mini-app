@@ -161,6 +161,16 @@
       border-radius: 8px;
       border: 1px solid #334155;
     }
+    .workflow-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .workflow-box button {
+      font-size: 0.85em;
+    }
   </style>
 </head>
 <body>
@@ -195,6 +205,26 @@
     </div>
 
     <div id="member-tasks-list">در حال دریافت تسک‌ها...</div>
+
+    <div id="member-schedule-request-box" class="workflow-box hidden">
+      <h4 style="color: var(--warning);">📅 درخواست تغییر تاریخ و ساعت پروژه</h4>
+      <input type="hidden" id="member_request_task_id">
+      <div id="member_request_task_title" style="font-weight:bold; margin-bottom:8px;"></div>
+
+      <label>📅 تاریخ پیشنهادی شمسی:</label>
+      <div class="date-row">
+        <select id="member_request_shamsi_day"></select>
+        <select id="member_request_shamsi_month"></select>
+        <select id="member_request_shamsi_year"></select>
+      </div>
+      <span id="member_request_date_summary" class="jalali-badge"></span>
+
+      <label>⏰ ساعت پیشنهادی:</label>
+      <input type="time" id="member_request_time" value="14:00">
+
+      <button onclick="submitScheduleChangeRequest()" style="background: var(--warning);">📨 ارسال درخواست برای مدیریت</button>
+      <button onclick="closeScheduleRequestBox()" style="background:#334155;">✖️ بستن</button>
+    </div>
   </div>
 
   <!-- ۲. فرم ثبت پروژه (مدیریت) -->
@@ -306,6 +336,16 @@
       </button>
     </div>
 
+    <div class="workflow-box admin-only" style="border-color: var(--warning);">
+      <h4 style="color: var(--warning);">🔔 پیگیری وضعیت یک تسک فعال</h4>
+      <p style="color:var(--muted); font-size:0.85em;">ابتدا تسک فعال را انتخاب کنید، سپس سیستم از مجری وضعیت واقعی تسک را می‌پرسد.</p>
+      <button onclick="loadFollowupTasks()" style="background:var(--warning);">🔎 انتخاب تسک برای پیگیری</button>
+      <div id="followup-task-box" class="hidden" style="margin-top:10px;">
+        <select id="followup-task-select"></select>
+        <button onclick="sendSelectedTaskFollowup()" style="background:var(--accent);">📣 ارسال پیگیری برای مجری</button>
+      </div>
+    </div>
+
     <div id="command-projects-list">در حال دریافت پروژه‌ها...</div>
   </div>
 
@@ -334,6 +374,7 @@
     let rawAllProjects = [];
     let rawAllTasks = [];
     let expandedProjects = {};
+    let followupTasks = [];
 
     const SHAMSI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
     const POST_PRODUCTION_ROLES = ["editor", "designer", "ai_artist"];
@@ -413,13 +454,16 @@
         document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
         populateShamsiDropdowns("single");
         populateShamsiDropdowns("monthly");
+        populateShamsiDropdowns("member_request");
         updateSingleDateLabel();
         await fetchMembers();
       } else {
+        populateShamsiDropdowns("member_request");
         const uName = currentUser?.first_name || '';
         document.getElementById("member-greeting").innerText = `سلام ${uName} عزیز، خوش آمدید.`;
       }
 
+      initMemberRequestDateControls();
       switchNav('workspace');
     });
 
@@ -463,6 +507,14 @@
       monthSel.onchange = updateSummary;
       yearSel.onchange = updateSummary;
       updateSummary();
+    }
+
+    function initMemberRequestDateControls() {
+      ['member_request_shamsi_day', 'member_request_shamsi_month', 'member_request_shamsi_year'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateMemberRequestDateSummary);
+      });
+      updateMemberRequestDateSummary();
     }
 
     function updateSingleDateLabel() {
@@ -620,8 +672,11 @@
             <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
             <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
             ${(!isCompleted && !isPendingReview) ? `
-              <button onclick="finishTaskByMember('${t.id}')" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
+              <button onclick="finishTaskByMember(${JSON.stringify(t.id)})" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
                 🏁 اعلام اتمام این تسک
+              </button>
+              <button onclick='openScheduleRequest(${JSON.stringify(t.id)}, ${JSON.stringify(t.title)}, ${JSON.stringify(t.scheduled_date || '')}, ${JSON.stringify(t.scheduled_time || '14:00')})' style="background: var(--warning); font-size: 0.8em; margin-top: 8px;">
+                📅 درخواست تغییر تاریخ و ساعت
               </button>
             ` : ''}
           </div>
@@ -648,6 +703,139 @@
         }
       } catch (e) {
         alert("خطا در ارتباط با سرور.");
+      }
+    }
+
+    function openScheduleRequest(taskId, title, currentDate, currentTime) {
+      const box = document.getElementById('member-schedule-request-box');
+      const taskIdEl = document.getElementById('member_request_task_id');
+      const titleEl = document.getElementById('member_request_task_title');
+      const timeEl = document.getElementById('member_request_time');
+
+      if (!box || !taskIdEl || !titleEl || !timeEl) return;
+
+      taskIdEl.value = taskId;
+      titleEl.innerText = `📌 ${title}`;
+      timeEl.value = currentTime || '14:00';
+
+      if (currentDate && /^\d{4}\/\d{2}\/\d{2}$/.test(currentDate)) {
+        const parts = currentDate.split('/');
+        document.getElementById('member_request_shamsi_year').value = parts[0];
+        document.getElementById('member_request_shamsi_month').value = String(parseInt(parts[1], 10));
+        document.getElementById('member_request_shamsi_day').value = String(parseInt(parts[2], 10));
+      }
+
+      updateMemberRequestDateSummary();
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function closeScheduleRequestBox() {
+      const box = document.getElementById('member-schedule-request-box');
+      if (box) box.classList.add('hidden');
+    }
+
+    function updateMemberRequestDateSummary() {
+      const d = document.getElementById('member_request_shamsi_day');
+      const m = document.getElementById('member_request_shamsi_month');
+      const y = document.getElementById('member_request_shamsi_year');
+      const summary = document.getElementById('member_request_date_summary');
+      if (d && m && y && summary) {
+        summary.innerText = `📅 زمان پیشنهادی: ${d.value} ${SHAMSI_MONTHS[Number(m.value) - 1]} ${y.value}`;
+      }
+    }
+
+    async function submitScheduleChangeRequest() {
+      const taskId = document.getElementById('member_request_task_id')?.value;
+      const day = document.getElementById('member_request_shamsi_day')?.value;
+      const month = document.getElementById('member_request_shamsi_month')?.value;
+      const year = document.getElementById('member_request_shamsi_year')?.value;
+      const time = document.getElementById('member_request_time')?.value;
+
+      if (!taskId || !day || !month || !year || !time) {
+        alert('لطفاً تاریخ و ساعت پیشنهادی را کامل وارد کنید.');
+        return;
+      }
+
+      const date = `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=request_task_schedule_change&task_id=${encodeURIComponent(taskId)}&member_id=${currentUserId}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          alert('✅ درخواست تغییر تاریخ و ساعت برای مدیریت ارسال شد.');
+          closeScheduleRequestBox();
+        } else {
+          alert(data.error || 'خطا در ارسال درخواست تغییر زمان.');
+        }
+      } catch (e) {
+        alert('خطا در ارتباط با سرور.');
+      }
+    }
+
+    async function loadFollowupTasks() {
+      const box = document.getElementById('followup-task-box');
+      const select = document.getElementById('followup-task-select');
+      if (!box || !select) return;
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_all_tasks`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        const data = await res.json();
+        followupTasks = (data.tasks || []).filter(t =>
+          ['PENDING_ACCEPTANCE', 'ACCEPTED'].includes(t.status) && Number(t.assigned_to_id || 0) > 0
+        );
+
+        if (followupTasks.length === 0) {
+          alert('در حال حاضر هیچ تسک فعال و قابل پیگیری وجود ندارد.');
+          box.classList.add('hidden');
+          return;
+        }
+
+        select.innerHTML = followupTasks.map(t =>
+          `<option value="${t.id}">${t.title} — ${t.assignee_name || 'مجری نامشخص'} — ${formatShamsiLabel(t.scheduled_date)}</option>`
+        ).join('');
+
+        box.classList.remove('hidden');
+      } catch (e) {
+        alert('خطا در دریافت تسک‌های فعال.');
+      }
+    }
+
+    async function sendSelectedTaskFollowup() {
+      const taskId = document.getElementById('followup-task-select')?.value;
+      if (!taskId) {
+        alert('لطفاً یک تسک را انتخاب کنید.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${encodeURIComponent(taskId)}&admin_id=${currentUserId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          alert('✅ پیام پیگیری برای مجری ارسال شد.');
+        } else {
+          alert(data.error || 'خطا در ارسال پیگیری.');
+        }
+      } catch (e) {
+        alert('خطا در ارتباط با سرور.');
       }
     }
 
@@ -764,10 +952,10 @@
               <small>وضعیت: <strong>${statusLabel}</strong></small>
               
               <div class="btn-action-row">
-                <button onclick="editTaskFee('${t.id}', '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
-                <button onclick="editTaskAssignee('${t.id}')" style="background: #334155;">👤 مجری</button>
-                <button onclick="toggleTaskStatus('${t.id}', '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
-                <button onclick="deleteTask('${t.id}', '${projectId}')" style="background: var(--danger);">🗑 حذف</button>
+                <button onclick="editTaskFee(${JSON.stringify(t.id)}, '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
+                <button onclick="editTaskAssignee(${JSON.stringify(t.id)})" style="background: #334155;">👤 مجری</button>
+                <button onclick="toggleTaskStatus(${JSON.stringify(t.id)}, '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
+                <button onclick="deleteTask(${JSON.stringify(t.id)}, '${projectId}')" style="background: var(--danger);">🗑 حذف</button>
               </div>
             </div>
           `;
@@ -807,7 +995,7 @@
         const choiceIdx = parseInt(choiceStr, 10) - 1;
         if (!isNaN(choiceIdx) && activeMembers[choiceIdx]) {
           const selectedMember = activeMembers[choiceIdx];
-          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}`, {
+          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}&admin_id=${currentUserId}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
