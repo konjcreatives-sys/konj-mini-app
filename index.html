@@ -191,6 +191,7 @@
     <button id="nav-workspace-btn" class="nav-btn active" onclick="switchNav('workspace')">📋 کارتابل من</button>
     <button id="nav-register-btn" class="nav-btn admin-only hidden" onclick="switchNav('register')">📌 ثبت پروژه</button>
     <button id="nav-command-btn" class="nav-btn admin-only hidden" onclick="switchNav('command')">🛠 اتاق فرمان</button>
+    <button id="nav-accounting-btn" class="nav-btn admin-only hidden" onclick="switchNav('accounting')">💰 حسابداری</button>
     <button id="nav-calendar-btn" class="nav-btn admin-only hidden" onclick="switchNav('calendar')">📅 تقویم کل</button>
   </div>
 
@@ -325,17 +326,6 @@
       <button id="cmd-completed-btn" class="sub-btn" onclick="switchCmdSub('completed')">📁 بایگانی اتمام‌یافته</button>
     </div>
 
-    <!-- بخش ثبت تسویه حساب و پرداختی جدید -->
-    <div style="background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #334155;">
-      <h5 style="margin:0 0 6px 0; color: var(--success);">💳 ثبت تسویه حساب و پرداختی جدید به مجری:</h5>
-      <select id="pay_member_id"></select>
-      <input type="number" id="pay_amount" placeholder="مبلغ پرداختی به تومان (مثلا 1000000)" style="margin-top: 6px;">
-      <input type="text" id="pay_desc" placeholder="توضیح تسویه (مثلا تسویه پارت اول)" style="margin-top: 6px;">
-      <button onclick="submitPaymentRecord()" style="background: var(--success); margin-top: 8px; font-size: 0.85em; padding: 8px;">
-        💳 ثبت و کسر از بدهی مجری
-      </button>
-    </div>
-
     <div class="workflow-box admin-only" style="border-color: var(--warning);">
       <h4 style="color: var(--warning);">🔔 پیگیری وضعیت یک تسک فعال</h4>
       <p style="color:var(--muted); font-size:0.85em;">ابتدا تسک فعال را انتخاب کنید، سپس سیستم از مجری وضعیت واقعی تسک را می‌پرسد.</p>
@@ -347,6 +337,60 @@
     </div>
 
     <div id="command-projects-list">در حال دریافت پروژه‌ها...</div>
+  </div>
+
+  <!-- ۴. حسابداری تفصیلی (مدیریت) -->
+  <div id="view-accounting" class="card hidden admin-only">
+    <h3>💰 حسابداری تفصیلی</h3>
+    <p style="color:var(--muted); font-size:0.88em;">حساب هر مجری را بر اساس ماه و Task مشاهده کنید. بدهی نهایی فقط از Taskهایی می‌آید که مدیر آن‌ها را تایید کرده است.</p>
+
+    <div class="sub-tabs">
+      <div style="flex:1;">
+        <label>👤 مجری</label>
+        <select id="accounting_member_id" onchange="fetchAccountingData()">
+          <option value="">همه مجریان</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label>📅 سال</label>
+        <select id="accounting_year" onchange="fetchAccountingData()">
+          <option value="">همه سال‌ها</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label>🗓 ماه</label>
+        <select id="accounting_month" onchange="fetchAccountingData()">
+          <option value="">همه ماه‌ها</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-action-row">
+      <button onclick="resetAccountingFilters()" style="background:#334155;">♻️ پاک کردن فیلترها</button>
+      <button onclick="fetchAccountingData()" style="background:var(--accent);">🔄 بروزرسانی حسابداری</button>
+    </div>
+
+    <div id="accounting-summary" class="tasks-subbox">در حال دریافت اطلاعات حسابداری...</div>
+
+    <div class="workflow-box">
+      <h4 style="color:var(--success);">💳 ثبت پرداخت جدید</h4>
+      <p style="color:var(--muted); font-size:0.82em;">هر پرداخت جدید باید حتماً به یک Task مشخص متصل باشد.</p>
+
+      <label>👤 مجری</label>
+      <select id="pay_member_id" onchange="loadAccountingPaymentTasks()"></select>
+
+      <label>📌 Task مربوط به پرداخت</label>
+      <select id="pay_task_id">
+        <option value="">انتخاب Task...</option>
+      </select>
+
+      <input type="number" id="pay_amount" placeholder="مبلغ پرداختی به تومان" style="margin-top: 6px;">
+      <input type="text" id="pay_desc" placeholder="توضیح پرداخت (مثلاً تسویه پارت اول)" style="margin-top: 6px;">
+
+      <button onclick="submitPaymentRecord()" style="background:var(--success);">💳 ثبت پرداخت مرتبط با Task</button>
+    </div>
+
+    <div id="accounting-task-list" style="margin-top:12px;">در حال دریافت جزئیات Taskها...</div>
   </div>
 
   <!-- ۴. تقویم کل استودیو (مدیریت) -->
@@ -398,6 +442,7 @@
       document.getElementById("view-workspace").classList.add("hidden");
       document.getElementById("view-register").classList.add("hidden");
       document.getElementById("view-command").classList.add("hidden");
+      document.getElementById("view-accounting").classList.add("hidden");
       document.getElementById("view-calendar").classList.add("hidden");
 
       if (nav === 'workspace') {
@@ -411,6 +456,12 @@
         document.getElementById("nav-command-btn").classList.add("active");
         document.getElementById("view-command").classList.remove("hidden");
         fetchCommandProjects();
+      } else if (nav === 'accounting') {
+        document.getElementById("nav-accounting-btn").classList.add("active");
+        document.getElementById("view-accounting").classList.remove("hidden");
+        initAccountingFilters();
+        fetchAccountingData();
+        loadAccountingPaymentTasks();
       } else if (nav === 'calendar') {
         document.getElementById("nav-calendar-btn").classList.add("active");
         document.getElementById("view-calendar").classList.remove("hidden");
@@ -588,11 +639,15 @@
         select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
 
         const paySelect = document.getElementById("pay_member_id");
+        const accountingMemberSelect = document.getElementById("accounting_member_id");
+
         if (paySelect) paySelect.innerHTML = '<option value="">👤 انتخاب مجری جهت تسویه</option>';
+        if (accountingMemberSelect) accountingMemberSelect.innerHTML = '<option value="">همه مجریان</option>';
 
         activeMembers.forEach(m => {
           select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
           if (paySelect) paySelect.innerHTML += `<option value="${m.chat_id}">${m.name}</option>`;
+          if (accountingMemberSelect) accountingMemberSelect.innerHTML += `<option value="${m.chat_id}">${m.name}</option>`;
         });
 
         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
@@ -601,33 +656,210 @@
       }
     }
 
-    async function submitPaymentRecord() {
-      const memberId = document.getElementById("pay_member_id").value;
-      const amount = parseInt(document.getElementById("pay_amount").value, 10);
-      const desc = document.getElementById("pay_desc").value.trim();
+    async function loadAccountingPaymentTasks() {
+      const memberId = document.getElementById("pay_member_id")?.value || "";
+      const taskSelect = document.getElementById("pay_task_id");
+      if (!taskSelect) return;
 
-      if (!memberId || isNaN(amount) || amount <= 0) {
-        alert("لطفاً مجری و مبلغ پرداختی معتبر را وارد کنید.");
+      taskSelect.innerHTML = '<option value="">در حال دریافت Taskها...</option>';
+
+      if (!memberId) {
+        taskSelect.innerHTML = '<option value="">ابتدا مجری را انتخاب کنید</option>';
         return;
       }
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&member_id=${memberId}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
+        const res = await fetch(`${FUNCTION_URL}?action=get_accounting_payment_tasks_api&admin_id=${ADMIN_ID}&member_id=${encodeURIComponent(memberId)}`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+        const data = await res.json();
+        const tasks = data.tasks || [];
+
+        if (!tasks.length) {
+          taskSelect.innerHTML = '<option value="">هیچ Task قابل پرداختی برای این مجری نیست</option>';
+          return;
+        }
+
+        taskSelect.innerHTML = '<option value="">انتخاب Task...</option>' +
+          tasks.map(t => `<option value="${t.id}">#${String(t.id).slice(-8)} — ${t.title} — ${formatShamsiLabel(t.scheduled_date)} — ${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} تومان</option>`).join("");
+      } catch (e) {
+        taskSelect.innerHTML = '<option value="">خطا در دریافت Taskها</option>';
+      }
+    }
+
+    async function submitPaymentRecord() {
+      const memberId = document.getElementById("pay_member_id").value;
+      const taskId = document.getElementById("pay_task_id").value;
+      const amount = parseInt(document.getElementById("pay_amount").value, 10);
+      const desc = document.getElementById("pay_desc").value.trim();
+
+      if (!memberId || !taskId || isNaN(amount) || amount <= 0) {
+        alert("لطفاً مجری، Task مربوطه و مبلغ معتبر را انتخاب کنید.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId)}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'X-Telegram-Init-Data': tg.initData || ''
           }
         });
-        if (res.ok) {
-          alert("پرداختی و تسویه حساب با موفقیت ثبت شد و از بدهی کسر گردید.");
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          alert("✅ پرداخت مرتبط با Task با موفقیت ثبت شد.");
           document.getElementById("pay_amount").value = "";
           document.getElementById("pay_desc").value = "";
+          await fetchAccountingData();
+          await loadAccountingPaymentTasks();
+        } else {
+          alert(data.error || "خطا در ثبت پرداختی.");
         }
       } catch (e) {
-        alert("خطا در ثبت پرداختی.");
+        alert("خطا در ارتباط با سرور.");
       }
     }
+
+    function initAccountingFilters() {
+      const yearSelect = document.getElementById("accounting_year");
+      const monthSelect = document.getElementById("accounting_month");
+      if (!yearSelect || !monthSelect) return;
+
+      if (yearSelect.options.length <= 1) {
+        for (let y = 1400; y <= 1410; y++) {
+          yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+      }
+
+      if (monthSelect.options.length <= 1) {
+        SHAMSI_MONTHS.forEach((name, index) => {
+          monthSelect.innerHTML += `<option value="${index + 1}">${name}</option>`;
+        });
+      }
+    }
+
+    function resetAccountingFilters() {
+      document.getElementById("accounting_member_id").value = "";
+      document.getElementById("accounting_year").value = "";
+      document.getElementById("accounting_month").value = "";
+      fetchAccountingData();
+    }
+
+    async function fetchAccountingData() {
+      const summary = document.getElementById("accounting-summary");
+      const list = document.getElementById("accounting-task-list");
+      if (!summary || !list) return;
+
+      summary.innerText = "در حال دریافت اطلاعات حسابداری...";
+      list.innerText = "در حال دریافت جزئیات Taskها...";
+
+      try {
+        const memberId = document.getElementById("accounting_member_id").value;
+        const year = document.getElementById("accounting_year").value;
+        const month = document.getElementById("accounting_month").value;
+
+        const res = await fetch(`${FUNCTION_URL}?action=get_accounting_data_api&admin_id=${ADMIN_ID}&member_id=${encodeURIComponent(memberId)}&year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'X-Telegram-Init-Data': tg.initData || ''
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          summary.innerText = data.error || "خطا در دریافت حسابداری.";
+          list.innerText = "";
+          return;
+        }
+
+        const formatMoney = n => `${Number(n || 0).toLocaleString('fa-IR')} تومان`;
+        const selectedMemberName = memberId
+          ? (activeMembers.find(m => String(m.chat_id) === String(memberId))?.name || 'مجری انتخاب‌شده')
+          : 'همه مجریان';
+        const monthLabel = month ? SHAMSI_MONTHS[Number(month) - 1] : 'همه ماه‌ها';
+        const yearLabel = year || 'همه سال‌ها';
+
+        summary.innerHTML = `
+          <div class="task-item">
+            <strong>👤 ${selectedMemberName}</strong><br>
+            <small>📅 دوره: ${yearLabel} — ${monthLabel}</small>
+          </div>
+          <div class="task-item">
+            <strong>💰 کل بودجه قبول‌شده</strong><br>
+            <span>${formatMoney(data.summary.accepted_budget)}</span>
+          </div>
+          <div class="task-item task-completed">
+            <strong>✅ بدهی قطعی / تاییدشده</strong><br>
+            <span>${formatMoney(data.summary.approved_debt)}</span>
+          </div>
+          <div class="task-item">
+            <strong>💳 پرداختی این دوره</strong><br>
+            <span>${formatMoney(data.summary.paid_in_period)}</span>
+          </div>
+          <div class="task-item">
+            <strong>🔴 مانده بدهی این دوره</strong><br>
+            <span>${formatMoney(data.summary.remaining_in_period)}</span>
+          </div>
+        `;
+
+        if (!data.rows || data.rows.length === 0) {
+          list.innerHTML = '<div class="task-item">برای فیلتر انتخاب‌شده Task مالی وجود ندارد.</div>';
+        } else {
+          list.innerHTML = `
+            <h4>📋 جزئیات مالی Taskها</h4>
+            ${data.rows.map(r => `
+              <div class="task-item ${r.status === 'COMPLETED' ? 'task-completed' : ''}">
+                <strong>📌 ${r.title}</strong><br>
+                <small>🆔 Task: <strong>${r.task_id}</strong></small><br>
+                <small>👤 مجری: <strong>${r.member_name}</strong></small><br>
+                <small>📅 تاریخ: <strong>${formatShamsiLabel(r.scheduled_date)}</strong> | ⏰ ${r.scheduled_time}</small><br>
+                <small>وضعیت: <strong>${STATUS_MAP[r.status] || r.status}</strong></small><br>
+                <small>💰 دستمزد/بودجه: <strong>${formatMoney(r.fee)}</strong></small><br>
+                <small>✅ بدهی قطعی: <strong>${formatMoney(r.approved_debt)}</strong></small><br>
+                <small>💳 پرداخت مرتبط با این Task: <strong>${formatMoney(r.paid)}</strong></small><br>
+                <small>🔴 مانده این Task: <strong>${formatMoney(r.remaining)}</strong></small>
+              </div>
+            `).join("")}
+          `;
+        }
+
+        if (data.legacy_payments && data.legacy_payments.length) {
+          list.innerHTML += `
+            <div class="workflow-box" style="border-color:var(--warning);">
+              <h4 style="color:var(--warning);">⚠️ پرداخت‌های قدیمی بدون مرجع Task</h4>
+              <p style="font-size:0.82em; color:var(--muted);">این پرداخت‌ها قبل از سیستم حسابداری جدید ثبت شده‌اند و Task مرجع ندارند؛ برای همین در جمع حسابداری Taskمحور این دوره لحاظ نشده‌اند.</p>
+              ${data.legacy_payments.map(p => `
+                <div style="padding:6px 0; border-bottom:1px solid #334155;">
+                  <strong>${p.member_name}</strong> — ${formatMoney(p.amount)} — ${p.description}
+                </div>
+              `).join("")}
+            </div>
+          `;
+        }
+
+        if (data.payments && data.payments.length) {
+          list.innerHTML += `
+            <div class="workflow-box">
+              <h4 style="color:var(--success);">💳 پرداخت‌های مرجع‌دار این دوره</h4>
+              ${data.payments.map(p => `
+                <div style="padding:6px 0; border-bottom:1px solid #334155;">
+                  <strong>${p.member_name}</strong> — ${formatMoney(p.amount)}<br>
+                  <small>Task #${p.task_id} — ${p.task_title} — ${p.description}</small>
+                </div>
+              `).join("")}
+            </div>
+          `;
+        }
+      } catch (e) {
+        summary.innerText = "خطا در ارتباط با حسابداری.";
+        list.innerText = "";
+      }
+    }
+
 
     async function fetchMemberTasks() {
       const container = document.getElementById("member-tasks-list");
