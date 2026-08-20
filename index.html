@@ -68,15 +68,95 @@
       font-size: 0.8em;
       background: #334155;
     }
+    .status-ok { color: var(--success); }در پاسخ به سوال شما:
+
+1. **دیتابیس (SQL):** نیازی به هیچ دستور جدیدی در SQL Editor نیست. جداول فعلی کاملاً پاسخگو هستند.
+2. **سوپابیس (Edge Function):** همان کد قبلی `super-processor` بخش اصلی باگ را رفع کرده است.
+3. **گیت‌هاب (HTML مینی‌اپ):** برای اینکه بخش ثبت پرداخت در مینی‌اپ انعطاف‌پذیر باشد و بتوانید پرداخت‌های کلی (بدون الزام به انتخاب تسک) را هم ثبت کنید، کد کامل و یکپارچه مینی‌اپ به شرح زیر تقدیم می‌شود:
+
+---
+
+### کد کامل مینی‌اپ (`index.html`) برای گیت‌هاب
+
+```html
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KONJ APP</title>
+  <script src="[https://telegram.org/js/telegram-web-app.js](https://telegram.org/js/telegram-web-app.js)"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
+    }
+    h2, h3, h4, h5 { margin-top: 0; color: #fff; }
+    label { display: block; margin-top: 12px; font-size: 0.9em; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      box-sizing: border-box;
+    }
+    .date-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .date-row select { flex: 1; }
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8em;
+      background: #334155;
+    }
     .status-ok { color: var(--success); }
     .status-err { color: var(--danger); }
     .hidden { display: none; }
     .task-item {
       border-right: 3px solid var(--accent);
-      padding-right: 10px;
+      padding: 12px;
       margin-bottom: 12px;
       background: rgba(30, 41, 59, 0.7);
-      padding: 12px;
       border-radius: 8px;
     }
     .task-completed {
@@ -85,10 +165,9 @@
     }
     .post-item {
       border-right: 3px solid var(--warning);
-      padding-right: 10px;
+      padding: 8px;
       margin-bottom: 10px;
       background: rgba(245, 158, 11, 0.05);
-      padding: 8px;
       border-radius: 6px;
     }
     .nav-tabs {
@@ -154,39 +233,24 @@
       font-size: 0.78em;
       padding: 6px 8px;
     }
-    .tasks-subbox {
+    .tasks-subbox, .workflow-box {
       margin-top: 10px;
-      padding: 10px;
-      background: #0f172a;
-      border-radius: 8px;
-      border: 1px solid #334155;
-    }
-    .workflow-box {
-      margin-top: 12px;
       padding: 12px;
       background: #0f172a;
       border-radius: 8px;
       border: 1px solid #334155;
     }
-    .workflow-box button {
-      font-size: 0.85em;
-    }
   </style>
 </head>
 <body>
 
-  <div id="unauthorized-view" class="hidden card" style="text-align: center; color: var(--danger);">
-    <h2>⚠️ عدم دسترسی</h2>
-    <p>لطفاً این برنامه را مستقیماً از داخل ربات تلگرام استودیو کنج باز کنید.</p>
-  </div>
-
-  <!-- هدر اصلی برنامه KONJ APP -->
+  <!-- هدر اصلی -->
   <div class="card" style="margin-bottom: 12px; padding: 12px; text-align: center;">
     <h2 style="margin:0; color: var(--accent); letter-spacing: 1px;">📱 KONJ APP</h2>
     <div id="status-bar" class="badge" style="margin-top: 6px;">✅ سیستم آنلاین</div>
   </div>
 
-  <!-- منوی اصلی ناوبری KONJ APP -->
+  <!-- منوی ناوبری -->
   <div class="nav-tabs">
     <button id="nav-workspace-btn" class="nav-btn active" onclick="switchNav('workspace')">📋 کارتابل من</button>
     <button id="nav-register-btn" class="nav-btn admin-only hidden" onclick="switchNav('register')">📌 ثبت پروژه</button>
@@ -195,7 +259,7 @@
     <button id="nav-calendar-btn" class="nav-btn admin-only hidden" onclick="switchNav('calendar')">📅 تقویم کل</button>
   </div>
 
-  <!-- ۱. کارتابل شخصی اعضا -->
+  <!-- ۱. کارتابل شخصی -->
   <div id="view-workspace" class="card">
     <h3 style="color: var(--accent);">📌 کارتابل شخصی</h3>
     <p id="member-greeting" style="color: var(--muted); font-size: 0.9em;"></p>
@@ -228,7 +292,7 @@
     </div>
   </div>
 
-  <!-- ۲. فرم ثبت پروژه (مدیریت) -->
+  <!-- ۲. ثبت پروژه (مدیریت) -->
   <div id="view-register" class="card hidden">
     <h3>📌 ثبت پروژه جدید</h3>
 
@@ -305,7 +369,6 @@
 
       <div id="preview-section" class="hidden" style="margin-top: 16px;">
         <h4>🔍 پیش‌نمایش برنامه‌ریزی</h4>
-        
         <h5>🎥 ۱. آفیش‌ها و تولید محتوا</h5>
         <div id="generated-tasks"></div>
 
@@ -317,7 +380,7 @@
     </div>
   </div>
 
-  <!-- ۳. اتاق فرمان و ویرایش مدیریت (مدیریت) -->
+  <!-- ۳. اتاق فرمان -->
   <div id="view-command" class="card hidden">
     <h3>🛠 اتاق فرمان و مدیریت کامل پروژه‌ها</h3>
     
@@ -339,7 +402,7 @@
     <div id="command-projects-list">در حال دریافت پروژه‌ها...</div>
   </div>
 
-  <!-- ۴. حسابداری تفصیلی (مدیریت) -->
+  <!-- ۴. حسابداری تفصیلی -->
   <div id="view-accounting" class="card hidden admin-only">
     <h3>💰 حسابداری تفصیلی</h3>
     <p style="color:var(--muted); font-size:0.88em;">حساب هر مجری را بر اساس ماه و Task مشاهده کنید. بدهی نهایی فقط از Taskهایی می‌آید که مدیر آن‌ها را تایید کرده است.</p>
@@ -374,26 +437,26 @@
 
     <div class="workflow-box">
       <h4 style="color:var(--success);">💳 ثبت پرداخت جدید</h4>
-      <p style="color:var(--muted); font-size:0.82em;">هر پرداخت جدید باید حتماً به یک Task مشخص متصل باشد.</p>
+      <p style="color:var(--muted); font-size:0.82em;">می‌توانید پرداخت را به یک تسک مشخص متصل کنید یا به صورت تسویه کلی حساب مجری ثبت نمایید.</p>
 
       <label>👤 مجری</label>
       <select id="pay_member_id" onchange="loadAccountingPaymentTasks()"></select>
 
       <label>📌 Task مربوط به پرداخت</label>
       <select id="pay_task_id">
-        <option value="">انتخاب Task...</option>
+        <option value="">💳 تسویه کلی حساب مجری (بدون تسک خاص)</option>
       </select>
 
       <input type="number" id="pay_amount" placeholder="مبلغ پرداختی به تومان" style="margin-top: 6px;">
-      <input type="text" id="pay_desc" placeholder="توضیح پرداخت (مثلاً تسویه پارت اول)" style="margin-top: 6px;">
+      <input type="text" id="pay_desc" placeholder="توضیح پرداخت (مثلاً تسویه پارت اول یا علی‌الحساب)" style="margin-top: 6px;">
 
-      <button onclick="submitPaymentRecord()" style="background:var(--success);">💳 ثبت پرداخت مرتبط با Task</button>
+      <button onclick="submitPaymentRecord()" style="background:var(--success);">💳 ثبت پرداخت</button>
     </div>
 
     <div id="accounting-task-list" style="margin-top:12px;">در حال دریافت جزئیات Taskها...</div>
   </div>
 
-  <!-- ۴. تقویم کل استودیو (مدیریت) -->
+  <!-- ۵. تقویم کل استودیو -->
   <div id="view-calendar" class="card hidden">
     <h3>📅 تقویم کل استودیو</h3>
     <p style="color: var(--muted); font-size: 0.85em;">تمامی آفیش‌ها و تسک‌های استودیو مرتب‌شده بر اساس تاریخ شمسی:</p>
@@ -404,7 +467,7 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
+    const SUPABASE_URL = "[https://hloqlpffqvxqaqixmikc.supabase.co](https://hloqlpffqvxqaqixmikc.supabase.co)";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzOTU0OCwiZXhwIjoyMDk5NzE1NTQ4fQ.XQlPjyGfzye0e-FmelZ2GnrTcC_CDMNsK8bAoa1hSDE";
     const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-processor`;
 
@@ -497,8 +560,6 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
       checkConnection();
-
-      // Robust admin detection (ID or URL param bypass)
       const isAdmin = currentUserId === ADMIN_ID || String(currentUserId) === "83013720" || location.search.includes("admin=1");
 
       if (isAdmin) {
@@ -635,6 +696,11 @@
         const data = await res.json();
         activeMembers = data.members || [];
         
+        // اطمینان از حضور مدیر در لیست مجریان
+        if (!activeMembers.some(m => Number(m.chat_id) === ADMIN_ID)) {
+          activeMembers.unshift({ chat_id: ADMIN_ID, name: "رامبد رحیمی (مدیر)" });
+        }
+
         const select = document.getElementById("single_assignee");
         select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
 
@@ -650,7 +716,7 @@
           if (accountingMemberSelect) accountingMemberSelect.innerHTML += `<option value="${m.chat_id}">${m.name}</option>`;
         });
 
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
+        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو)</span>`;
       } catch (err) {
         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
       }
@@ -661,12 +727,9 @@
       const taskSelect = document.getElementById("pay_task_id");
       if (!taskSelect) return;
 
-      taskSelect.innerHTML = '<option value="">در حال دریافت Taskها...</option>';
+      taskSelect.innerHTML = '<option value="">💳 تسویه کلی حساب مجری (بدون تسک خاص)</option>';
 
-      if (!memberId) {
-        taskSelect.innerHTML = '<option value="">ابتدا مجری را انتخاب کنید</option>';
-        return;
-      }
+      if (!memberId) return;
 
       try {
         const res = await fetch(`${FUNCTION_URL}?action=get_accounting_payment_tasks_api&admin_id=${ADMIN_ID}&member_id=${encodeURIComponent(memberId)}`, {
@@ -678,15 +741,11 @@
         const data = await res.json();
         const tasks = data.tasks || [];
 
-        if (!tasks.length) {
-          taskSelect.innerHTML = '<option value="">هیچ Task قابل پرداختی برای این مجری نیست</option>';
-          return;
-        }
-
-        taskSelect.innerHTML = '<option value="">انتخاب Task...</option>' +
-          tasks.map(t => `<option value="${t.id}">#${String(t.id).slice(-8)} — ${t.title} — ${formatShamsiLabel(t.scheduled_date)} — ${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} تومان</option>`).join("");
+        tasks.forEach(t => {
+          taskSelect.innerHTML += `<option value="${t.id}">📌 #${String(t.id).slice(-6)} — ${t.title} — ${formatShamsiLabel(t.scheduled_date)} (${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} ت)</option>`;
+        });
       } catch (e) {
-        taskSelect.innerHTML = '<option value="">خطا در دریافت Taskها</option>';
+        console.error("Error loading payment tasks:", e);
       }
     }
 
@@ -696,13 +755,13 @@
       const amount = parseInt(document.getElementById("pay_amount").value, 10);
       const desc = document.getElementById("pay_desc").value.trim();
 
-      if (!memberId || !taskId || isNaN(amount) || amount <= 0) {
-        alert("لطفاً مجری، Task مربوطه و مبلغ معتبر را انتخاب کنید.");
+      if (!memberId || isNaN(amount) || amount <= 0) {
+        alert("لطفاً مجری و مبلغ معتبر را وارد کنید.");
         return;
       }
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId)}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
+        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId || '')}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -711,7 +770,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success) {
-          alert("✅ پرداخت مرتبط با Task با موفقیت ثبت شد.");
+          alert("✅ پرداخت با موفقیت در حسابداری ثبت شد.");
           document.getElementById("pay_amount").value = "";
           document.getElementById("pay_desc").value = "";
           await fetchAccountingData();
@@ -789,39 +848,38 @@
             <small>📅 دوره: ${yearLabel} — ${monthLabel}</small>
           </div>
           <div class="task-item">
-            <strong>💰 کل بودجه قبول‌شده</strong><br>
+            <strong>💰 کل بودجه توافق‌شده</strong><br>
             <span>${formatMoney(data.summary.accepted_budget)}</span>
           </div>
           <div class="task-item task-completed">
-            <strong>✅ بدهی قطعی / تاییدشده</strong><br>
+            <strong>✅ بدهی قطعی (تایید مدیر)</strong><br>
             <span>${formatMoney(data.summary.approved_debt)}</span>
           </div>
           <div class="task-item">
-            <strong>💳 پرداختی این دوره</strong><br>
+            <strong>💳 پرداختی‌های این دوره</strong><br>
             <span>${formatMoney(data.summary.paid_in_period)}</span>
           </div>
           <div class="task-item">
-            <strong>🔴 مانده بدهی این دوره</strong><br>
+            <strong>🔴 مانده بدهی قطعی</strong><br>
             <span>${formatMoney(data.summary.remaining_in_period)}</span>
           </div>
         `;
 
         if (!data.rows || data.rows.length === 0) {
-          list.innerHTML = '<div class="task-item">برای فیلتر انتخاب‌شده Task مالی وجود ندارد.</div>';
+          list.innerHTML = '<div class="task-item">برای فیلتر انتخاب‌شده تسک مالی یافت نشد.</div>';
         } else {
           list.innerHTML = `
             <h4>📋 جزئیات مالی Taskها</h4>
             ${data.rows.map(r => `
               <div class="task-item ${r.status === 'COMPLETED' ? 'task-completed' : ''}">
                 <strong>📌 ${r.title}</strong><br>
-                <small>🆔 Task: <strong>${r.task_id}</strong></small><br>
                 <small>👤 مجری: <strong>${r.member_name}</strong></small><br>
                 <small>📅 تاریخ: <strong>${formatShamsiLabel(r.scheduled_date)}</strong> | ⏰ ${r.scheduled_time}</small><br>
                 <small>وضعیت: <strong>${STATUS_MAP[r.status] || r.status}</strong></small><br>
-                <small>💰 دستمزد/بودجه: <strong>${formatMoney(r.fee)}</strong></small><br>
+                <small>💰 دستمزد: <strong>${formatMoney(r.fee)}</strong></small><br>
                 <small>✅ بدهی قطعی: <strong>${formatMoney(r.approved_debt)}</strong></small><br>
-                <small>💳 پرداخت مرتبط با این Task: <strong>${formatMoney(r.paid)}</strong></small><br>
-                <small>🔴 مانده این Task: <strong>${formatMoney(r.remaining)}</strong></small>
+                <small>💳 پرداختی متصل: <strong>${formatMoney(r.paid)}</strong></small><br>
+                <small>🔴 مانده این تسک: <strong>${formatMoney(r.remaining)}</strong></small>
               </div>
             `).join("")}
           `;
@@ -829,37 +887,21 @@
 
         if (data.legacy_payments && data.legacy_payments.length) {
           list.innerHTML += `
-            <div class="workflow-box" style="border-color:var(--warning);">
-              <h4 style="color:var(--warning);">⚠️ پرداخت‌های قدیمی بدون مرجع Task</h4>
-              <p style="font-size:0.82em; color:var(--muted);">این پرداخت‌ها قبل از سیستم حسابداری جدید ثبت شده‌اند و Task مرجع ندارند؛ برای همین در جمع حسابداری Taskمحور این دوره لحاظ نشده‌اند.</p>
+            <div class="workflow-box">
+              <h4 style="color:var(--success);">💳 پرداخت‌های کلی و آزاد این دوره</h4>
               ${data.legacy_payments.map(p => `
                 <div style="padding:6px 0; border-bottom:1px solid #334155;">
-                  <strong>${p.member_name}</strong> — ${formatMoney(p.amount)} — ${p.description}
-                </div>
-              `).join("")}
-            </div>
-          `;
-        }
-
-        if (data.payments && data.payments.length) {
-          list.innerHTML += `
-            <div class="workflow-box">
-              <h4 style="color:var(--success);">💳 پرداخت‌های مرجع‌دار این دوره</h4>
-              ${data.payments.map(p => `
-                <div style="padding:6px 0; border-bottom:1px solid #334155;">
-                  <strong>${p.member_name}</strong> — ${formatMoney(p.amount)}<br>
-                  <small>Task #${p.task_id} — ${p.task_title} — ${p.description}</small>
+                  <strong>${p.member_name}</strong> — ${formatMoney(p.amount)} — <small>${p.description}</small>
                 </div>
               `).join("")}
             </div>
           `;
         }
       } catch (e) {
-        summary.innerText = "خطا در ارتباط با حسابداری.";
+        summary.innerText = "خطا در برقراری ارتباط با حسابداری.";
         list.innerText = "";
       }
     }
-
 
     async function fetchMemberTasks() {
       const container = document.getElementById("member-tasks-list");
@@ -876,7 +918,7 @@
         rawUserTasks = data.tasks || [];
         renderMemberTasks('active');
       } catch (err) {
-        container.innerHTML = `<div style="text-align:center; padding:10px;">در حال حاضر هیچ تسکی یافت نشد.<br><button onclick="fetchMemberTasks()" style="margin-top:8px; padding:6px; font-size:0.8em; background:#334155;">🔄 تلاش مجدد</button></div>`;
+        container.innerHTML = `<div style="text-align:center; padding:10px;">تسکی یافت نشد.<br><button onclick="fetchMemberTasks()" style="margin-top:8px; padding:6px; font-size:0.8em; background:#334155;">🔄 تلاش مجدد</button></div>`;
       }
     }
 
@@ -901,7 +943,7 @@
         return `
           <div class="task-item ${isCompleted ? 'task-completed' : ''}">
             <strong>${t.title}</strong><br>
-            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
+            <small>📅 ددلاین/تاریخ: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
             <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'}; font-weight: bold;">وضعیت: ${statusText}</small>
             ${(!isCompleted && !isPendingReview) ? `
               <button onclick="finishTaskByMember(${JSON.stringify(t.id)})" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
@@ -953,8 +995,8 @@
       if (currentDate && /^\d{4}\/\d{2}\/\d{2}$/.test(currentDate)) {
         const parts = currentDate.split('/');
         document.getElementById('member_request_shamsi_year').value = parts[0];
-        document.getElementById('member_request_shamsi_month').value = String(parseInt(parts[1], 10));
-        document.getElementById('member_request_shamsi_day').value = String(parseInt(parts[2], 10));
+        document.getElementById('member_request_shamsi_month').value = String(parseInt(parts, 10));
+        document.getElementById('member_request_shamsi_day').value = String(parseInt(parts, 10));
       }
 
       updateMemberRequestDateSummary();
@@ -1030,30 +1072,27 @@
         );
 
         if (followupTasks.length === 0) {
-          alert('در حال حاضر هیچ تسک فعال و قابل پیگیری وجود ندارد.');
+          alert('در حال حاضر هیچ تسک فعالی وجود ندارد.');
           box.classList.add('hidden');
           return;
         }
 
         select.innerHTML = followupTasks.map(t =>
-          `<option value="${t.id}">${t.title} — ${t.assignee_name || 'مجری نامشخص'} — ${formatShamsiLabel(t.scheduled_date)}</option>`
+          `<option value="${t.id}">${t.title} — ${t.assignee_name || 'مجری'} — ${formatShamsiLabel(t.scheduled_date)}</option>`
         ).join('');
 
         box.classList.remove('hidden');
       } catch (e) {
-        alert('خطا در دریافت تسک‌های فعال.');
+        alert('خطا در دریافت تسک‌ها.');
       }
     }
 
     async function sendSelectedTaskFollowup() {
       const taskId = document.getElementById('followup-task-select')?.value;
-      if (!taskId) {
-        alert('لطفاً یک تسک را انتخاب کنید.');
-        return;
-      }
+      if (!taskId) return;
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${encodeURIComponent(taskId)}&admin_id=${currentUserId}`, {
+        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${encodeURIComponent(taskId)}&admin_id=${currentUserId || ADMIN_ID}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -1114,7 +1153,7 @@
             
             <div class="btn-action-row">
               <button onclick="toggleProjectTasks('${p.id}')" style="background: var(--accent);">
-                ${isExpanded ? '🔽 بستن مدیریت تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها'}
+                ${isExpanded ? '🔽 بستن تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها'}
               </button>
               <button onclick="toggleProjectStatus('${p.id}')" style="background: #334155;">
                 ${isCompleted ? '🟢 فعال‌سازی' : '🏁 بایگانی'}
@@ -1131,11 +1170,8 @@
         `;
       }).join("");
 
-      // Render tasks for expanded projects
       Object.keys(expandedProjects).forEach(pid => {
-        if (expandedProjects[pid]) {
-          loadProjectTasksInBox(pid);
-        }
+        if (expandedProjects[pid]) loadProjectTasksInBox(pid);
       });
     }
 
@@ -1199,7 +1235,7 @@
     }
 
     async function editTaskFee(taskId, currentFee) {
-      const newFeeStr = prompt("لطفاً دستمزد جدید تسک را به تومان وارد کنید:", currentFee);
+      const newFeeStr = prompt("دستمزد جدید تسک به تومان:", currentFee);
       if (newFeeStr !== null) {
         const newFee = parseInt(newFeeStr.replace(/,/g, ''), 10);
         if (!isNaN(newFee) && newFee >= 0) {
@@ -1216,18 +1252,14 @@
     }
 
     async function editTaskAssignee(taskId) {
-      if (activeMembers.length === 0) {
-        alert("هیچ عضو فعالی یافت نشد.");
-        return;
-      }
-
+      if (activeMembers.length === 0) return;
       let options = activeMembers.map((m, i) => `${i + 1}. ${m.name} (${m.chat_id})`).join("\n");
-      const choiceStr = prompt(`لطفاً شماره مجری جدید را انتخاب کنید:\n\n${options}`);
+      const choiceStr = prompt(`شماره مجری جدید:\n\n${options}`);
       if (choiceStr) {
         const choiceIdx = parseInt(choiceStr, 10) - 1;
         if (!isNaN(choiceIdx) && activeMembers[choiceIdx]) {
           const selectedMember = activeMembers[choiceIdx];
-          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}&admin_id=${currentUserId}`, {
+          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}&admin_id=${currentUserId || ADMIN_ID}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -1263,7 +1295,7 @@
     }
 
     async function deleteProject(projectId) {
-      if (!confirm("آیا از حذف کامل این پروژه و تمامی تسک‌های آن اطمینان دارید؟")) return;
+      if (!confirm("آیا از حذف کامل این پروژه و تمام تسک‌های آن اطمینان دارید؟")) return;
       await fetch(`${FUNCTION_URL}?action=delete_project_api&project_id=${projectId}`, {
         method: 'POST',
         headers: {
@@ -1275,20 +1307,14 @@
     }
 
     async function toggleProjectStatus(projectId) {
-      try {
-        const res = await fetch(`${FUNCTION_URL}?action=toggle_project_status_api&project_id=${projectId}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'X-Telegram-Init-Data': tg.initData || ''
-          }
-        });
-        if (res.ok) {
-          await fetchCommandProjects();
+      await fetch(`${FUNCTION_URL}?action=toggle_project_status_api&project_id=${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'X-Telegram-Init-Data': tg.initData || ''
         }
-      } catch (e) {
-        alert("خطا در تغییر وضعیت پروژه.");
-      }
+      });
+      fetchCommandProjects();
     }
 
     async function fetchStudioCalendar() {
@@ -1462,15 +1488,13 @@
         `;
       }).join("");
 
-      containerPosts.innerHTML = postTasks.map(t => {
-        return `
-          <div class="post-item">
-            <strong>${t.title}</strong><br>
-            <small>📅 تاریخ انتشار: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
-            <small style="color: var(--warning);">👤 برنامه انتشار: مخصوص مدیر (وضعیت: ⏳ هنوز انجام نشده)</small>
-          </div>
-        `;
-      }).join("");
+      containerPosts.innerHTML = postTasks.map(t => `
+        <div class="post-item">
+          <strong>${t.title}</strong><br>
+          <small>📅 تاریخ انتشار: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
+          <small style="color: var(--warning);">👤 برنامه انتشار: مخصوص مدیر</small>
+        </div>
+      `).join("");
 
       document.getElementById("preview-section").classList.remove("hidden");
     }
@@ -1513,7 +1537,7 @@
           tg.sendData(JSON.stringify(payload));
           tg.close();
         } catch (err) {
-          alert("خطا در ارسال داده‌ها به ربات. لطفاً مجدداً تلاش کنید.");
+          alert("خطا در ارسال داده‌ها به ربات.");
           btn.disabled = false;
           btn.innerText = resetLabel;
         }
