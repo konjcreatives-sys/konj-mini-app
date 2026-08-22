@@ -410,6 +410,56 @@
     <div id="studio-calendar-list">در حال بارگذاری تقویم...</div>
   </div>
 
+  <!-- مودال اختصاصی ارجاع به پس‌تولید / تدوین‌گر -->
+  <div id="cascade-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 12px;">
+    <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; margin-bottom: 0; border: 1px solid #8b5cf6; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4 id="cascade_modal_title" style="margin: 0; color: #a78bfa;">🎬 ارجاع پروژه به تدوین / پس‌تولید</h4>
+        <button onclick="closeCascadeModal()" style="width: auto; padding: 4px 10px; margin: 0; background: #334155; border-radius: 6px;">✖️</button>
+      </div>
+      
+      <input type="hidden" id="cas_parent_task_id">
+      <input type="hidden" id="cas_project_id">
+      <input type="hidden" id="cas_client_name">
+
+      <label>تخصص مورد نیاز:</label>
+      <select id="cas_role" onchange="filterCascadeMembersByRole()">
+        <option value="editor">🎬 تدوین‌گر</option>
+        <option value="designer">🎨 طراح گرافیک</option>
+        <option value="ai_artist">🤖 هنرمند AI</option>
+      </select>
+
+      <label>انتخاب مجری:</label>
+      <select id="cas_assignee">
+        <option value="">🤖 ارجاع خودکار به بهترین مجری</option>
+      </select>
+
+      <label>تعداد خروجی ویدیویی / پارت‌های تدوین:</label>
+      <input type="number" id="cas_task_count" value="1" min="1" max="20" oninput="updateCascadeTotalSummary()">
+
+      <label>دستمزد هر ویدیو / خروجی (تومان):</label>
+      <input type="number" id="cas_fee_per_task" value="1200000" step="100000" oninput="updateCascadeTotalSummary()">
+
+      <div id="cas_total_summary" class="jalali-badge" style="margin: 8px 0; padding: 8px; background: rgba(139,92,246,0.15); border-radius: 6px; color: #c4b5fd;">
+        💰 جمع کل: ۱,۲۰۰,۰۰۰ تومان (۱ تسک)
+      </div>
+
+      <label>⏳ مهلت تحویل شمسی (ددلاین):</label>
+      <div class="date-row">
+        <select id="cas_shamsi_day"></select>
+        <select id="cas_shamsi_month"></select>
+        <select id="cas_shamsi_year"></select>
+      </div>
+
+      <label>ساعت تحویل:</label>
+      <input type="time" id="cas_time" value="18:00">
+
+      <button id="cas_submit_btn" onclick="submitCascadeReferral()" style="background: #8b5cf6; margin-top: 14px; font-size: 0.95em;">
+        🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر
+      </button>
+    </div>
+  </div>
+
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -447,6 +497,103 @@
         'Content-Type': 'application/json',
         'X-Telegram-Init-Data': tg.initData || ''
       };
+    }
+
+    function openCascadeModal(parentTaskId, projectId, clientName) {
+      document.getElementById("cas_parent_task_id").value = parentTaskId || "";
+      document.getElementById("cas_project_id").value = projectId || "";
+      document.getElementById("cas_client_name").value = clientName || "پروژه";
+      document.getElementById("cascade_modal_title").innerText = `🎬 ارجاع پروژه «${clientName || 'پروژه'}» به تدوین / پس‌تولید`;
+      
+      document.getElementById("cas_task_count").value = 1;
+      document.getElementById("cas_fee_per_task").value = 1200000;
+      populateShamsiDropdowns("cas");
+      filterCascadeMembersByRole();
+      updateCascadeTotalSummary();
+
+      document.getElementById("cascade-modal").classList.remove("hidden");
+    }
+
+    function closeCascadeModal() {
+      document.getElementById("cascade-modal").classList.add("hidden");
+    }
+
+    function filterCascadeMembersByRole() {
+      const role = document.getElementById("cas_role").value;
+      const targetKeyword = role === 'editor' ? 'تدوین' : (role === 'designer' ? 'طراح' : 'AI');
+      const select = document.getElementById("cas_assignee");
+      select.innerHTML = '<option value="">🤖 ارجاع خودکار به بهترین مجری</option>';
+
+      activeMembers.forEach(m => {
+        const specs = Array.isArray(m.specialties) ? m.specialties.join(" ") : "";
+        if (specs.includes(targetKeyword) || !specs) {
+          select.innerHTML += `<option value="${m.chat_id}">👤 ${m.name} (${m.chat_id})</option>`;
+        }
+      });
+    }
+
+    function updateCascadeTotalSummary() {
+      const count = parseInt(document.getElementById("cas_task_count").value, 10) || 1;
+      const fee = parseInt(document.getElementById("cas_fee_per_task").value, 10) || 0;
+      const total = count * fee;
+      document.getElementById("cas_total_summary").innerText = `💰 جمع کل: ${total.toLocaleString('fa-IR')} تومان (${count} خروجی و تسک مجزا)`;
+    }
+
+    async function submitCascadeReferral() {
+      const parentTaskId = document.getElementById("cas_parent_task_id").value;
+      const projectId = document.getElementById("cas_project_id").value;
+      const clientName = document.getElementById("cas_client_name").value;
+      const role = document.getElementById("cas_role").value;
+      const assigneeId = document.getElementById("cas_assignee").value;
+      const taskCount = parseInt(document.getElementById("cas_task_count").value, 10) || 1;
+      const feePerTask = parseInt(document.getElementById("cas_fee_per_task").value, 10) || 0;
+      
+      const sDay = document.getElementById("cas_shamsi_day").value;
+      const sMonth = document.getElementById("cas_shamsi_month").value;
+      const sYear = document.getElementById("cas_shamsi_year").value;
+      const deadlineShamsi = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
+      const time = document.getElementById("cas_time").value;
+
+      const btn = document.getElementById("cas_submit_btn");
+      btn.disabled = true;
+      btn.innerText = "در حال ایجاد و ارسال...";
+
+      const payload = {
+        admin_id: currentUser ? currentUser.id : ADMIN_ID,
+        parent_task_id: parentTaskId || null,
+        project_id: projectId || null,
+        client_name: clientName,
+        role,
+        assignee_id: assigneeId || null,
+        task_count: taskCount,
+        fee_per_task: feePerTask,
+        deadline_shamsi: deadlineShamsi,
+        time
+      };
+
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=cascade_referral_api`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(`✅ تعداد ${result.created_count} تسک جدید برای «${result.assignee_name || 'مجری'}» با موفقیت ثبت شد و پیشنهاد کار در تلگرام برای او ارسال گردید.`);
+          closeCascadeModal();
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
+          await fetchCommandProjects();
+        } else {
+          alert(result.error || "خطا در ارجاع تسک.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
+        }
+      } catch (e) {
+        alert("خطا در ارتباط با سرور.");
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
+      }
     }
 
     function switchNav(nav) {
@@ -879,7 +1026,8 @@
               <small>💰 دستمزد: <strong>${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} تومان</strong> | 👤 مجری: <strong>${assigneeName}</strong></small><br>
               <small>وضعیت: <strong>${statusLabel}</strong></small>
               
-              <div class="btn-action-row">
+              <div class="btn-action-row" style="flex-wrap: wrap;">
+                <button onclick="openCascadeModal('${t.id}', '${projectId}', '${t.title.replace(/'/g, "\\'")}')" style="background: #8b5cf6; font-weight: bold; flex: 1 1 100%; margin-bottom: 4px;">🎬 ارجاع این آفیش به تدوین‌گر</button>
                 <button onclick="editTaskFee('${t.id}', '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
                 <button onclick="editTaskAssignee('${t.id}')" style="background: #334155;">👤 مجری</button>
                 <button onclick="toggleTaskStatus('${t.id}', '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
