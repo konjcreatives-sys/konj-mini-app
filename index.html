@@ -595,8 +595,8 @@
         const parts = shamsiStr.split('/');
         if (parts.length === 3) {
           const y = parts[0];
-          const m = parseInt(parts, 10);
-          const d = parseInt(parts, 10);
+          const m = parseInt(parts[1], 10);
+          const d = parseInt(parts[2], 10);
           if (!isNaN(m) && m >= 1 && m <= 12) {
             return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
           }
@@ -1151,7 +1151,31 @@
         admin_id: currentUser ? currentUser.id : ADMIN_ID
       };
 
-      await sendPayloadToBot(payload, btn, "🚀 ثبت نهایی پروژه تکی");
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=create_single_project_api`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ پروژه تکی با موفقیت در سیستم ثبت شد و پیشنهاد تسک برای مجری ارسال گردید.");
+          document.getElementById("single_brand").value = "";
+          document.getElementById("single_title").value = "";
+          document.getElementById("single_location").value = "";
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
+          switchNav('command');
+        } else {
+          alert(result.error || "خطا در ثبت پروژه تکی.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
+        }
+      } catch (err) {
+        alert("خطا در ارتباط با سرور.");
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت نهایی پروژه تکی";
+      }
     }
 
     function generateSchedule() {
@@ -1278,23 +1302,29 @@
         admin_id: currentUser ? currentUser.id : ADMIN_ID
       };
 
-      await sendPayloadToBot(payload, btn, "🚀 ثبت نهایی کمپین ماهانه");
-    }
-
-    async function sendPayloadToBot(payload, btnElement, originalText) {
       try {
-        if (tg.sendData) {
-          tg.sendData(JSON.stringify(payload));
-          setTimeout(() => tg.close(), 500);
+        const res = await fetch(`${FUNCTION_URL}?action=create_monthly_project_api`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(`✅ کمپین ماهانه با موفقیت ثبت شد (${result.created_count || calculatedTasks.length} تسک ایجاد گردید).`);
+          document.getElementById("brand_name").value = "";
+          document.getElementById("preview-section").classList.add("hidden");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
+          switchNav('command');
         } else {
-          alert("داده‌ها آماده شدند اما این بخش فقط داخل تلگرام اجرا می‌شود.");
-          btnElement.disabled = false;
-          btnElement.innerText = originalText;
+          alert(result.error || "خطا در ثبت کمپین ماهانه.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
         }
       } catch (err) {
-        alert("خطا در ارسال داده‌ها به تلگرام.");
-        btnElement.disabled = false;
-        btnElement.innerText = originalText;
+        alert("خطا در ارتباط با سرور.");
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
       }
     }
   </script>
