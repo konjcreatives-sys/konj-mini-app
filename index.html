@@ -645,18 +645,26 @@
         const accFilterMember = document.getElementById("acc_filter_member");
         if (accFilterMember) {
           accFilterMember.innerHTML = '<option value="">همه مجریان</option>';
-          accFilterMember.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+          const hasAdmin = activeMembers.some(m => Number(m.chat_id) === ADMIN_ID);
+          if (!hasAdmin) {
+            accFilterMember.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+          }
           activeMembers.forEach(m => {
-            accFilterMember.innerHTML += `<option value="${m.chat_id}">${m.name}</option>`;
+            const displayName = Number(m.chat_id) === ADMIN_ID ? 'رامبد رحیمی (مدیر)' : m.name;
+            accFilterMember.innerHTML += `<option value="${m.chat_id}">${displayName}</option>`;
           });
         }
 
         const accPayMember = document.getElementById("acc_pay_member");
         if (accPayMember) {
           accPayMember.innerHTML = '<option value="">انتخاب مجری جهت پرداخت</option>';
-          accPayMember.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+          const hasAdmin = activeMembers.some(m => Number(m.chat_id) === ADMIN_ID);
+          if (!hasAdmin) {
+            accPayMember.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+          }
           activeMembers.forEach(m => {
-            accPayMember.innerHTML += `<option value="${m.chat_id}">${m.name}</option>`;
+            const displayName = Number(m.chat_id) === ADMIN_ID ? 'رامبد رحیمی (مدیر)' : m.name;
+            accPayMember.innerHTML += `<option value="${m.chat_id}">${displayName}</option>`;
           });
         }
 
