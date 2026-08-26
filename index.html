@@ -18,6 +18,7 @@
       --success: #22c55e;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --purple: #8b5cf6;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -136,6 +137,7 @@
       font-size: 0.8em;
       cursor: pointer;
       margin-top: 0;
+      font-weight: bold;
     }
     .sub-btn.active {
       background: var(--card);
@@ -196,14 +198,30 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
       margin-bottom: 10px;
+      background: var(--card-inner);
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
     }
     .filter-bar label {
       margin-top: 0;
       font-size: 0.78em;
     }
     .filter-bar select {
-      padding: 6px 8px;
-      font-size: 0.82em;
+      padding: 6px;
+      font-size: 0.8em;
+      margin-top: 2px;
+    }
+    .filter-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .filter-actions button {
+      margin-top: 0;
+      padding: 6px 10px;
+      font-size: 0.8em;
+      flex: 1;
     }
   </style>
 </head>
@@ -230,7 +248,7 @@
     <p id="member-greeting" style="color: var(--muted); font-size: 0.9em;"></p>
     <div class="sub-tabs">
       <button id="sub-active-btn" class="sub-btn active" onclick="switchMemberSub('active')">⏳ تسک‌های فعال</button>
-      <button id="sub-completed-btn" class="sub-btn" onclick="switchMemberSub('completed')">🏁 تسک‌های اتمام‌یافته و بایگانی</button>
+      <button id="sub-completed-btn" class="sub-btn" onclick="switchMemberSub('completed')">🏁 بایگانی تسک‌ها</button>
     </div>
     <div id="member-tasks-list">در حال دریافت تسک‌ها...</div>
   </div>
@@ -315,17 +333,17 @@
       <button id="cmd-completed-btn" class="sub-btn" onclick="switchCmdSub('completed')">📁 بایگانی اتمام‌یافته</button>
     </div>
 
-    <!-- فیلترهای پیشرفته اتاق فرمان -->
+    <!-- فیلترهای اتاق فرمان -->
     <div class="filter-bar">
       <div>
         <label>👤 مجری</label>
-        <select id="cmd_filter_member" onchange="renderCommandProjectsCurrent()">
+        <select id="cmd_filter_member" onchange="applyCommandFilters()">
           <option value="">همه مجریان</option>
         </select>
       </div>
       <div>
         <label>🎯 تخصص</label>
-        <select id="cmd_filter_role" onchange="renderCommandProjectsCurrent()">
+        <select id="cmd_filter_role" onchange="applyCommandFilters()">
           <option value="">همه تخصص‌ها</option>
           <option value="filmmaker">🎥 تصویربردار</option>
           <option value="photographer">📷 عکاس</option>
@@ -336,25 +354,24 @@
       </div>
       <div>
         <label>🗓 ماه</label>
-        <select id="cmd_filter_month" onchange="renderCommandProjectsCurrent()">
+        <select id="cmd_filter_month" onchange="applyCommandFilters()">
           <option value="">همه ماه‌ها</option>
         </select>
       </div>
     </div>
-    <div style="margin-bottom: 12px;">
-      <button onclick="resetCommandFilters()" style="background: #334155; padding: 6px 10px; font-size: 0.8em; margin-top:0;">
-        ♻️ پاک کردن فیلترهای اتاق فرمان
-      </button>
+    <div class="filter-actions">
+      <button onclick="resetCommandFilters()" style="background: #334155;">♻️ پاک کردن فیلترها</button>
+      <button onclick="fetchCommandProjects()" style="background: var(--accent);">🔄 بروزرسانی</button>
     </div>
 
     <!-- پیگیری وضعیت تسک فعال -->
     <div class="remind-box">
       <h5 style="margin:0 0 6px 0; color: var(--warning);">🔔 پیگیری وضعیت یک تسک فعال:</h5>
-      <p style="font-size:0.8em; color:var(--muted); margin:0 0 8px 0;">ابتدا تسک فعال را انتخاب کنید، سپس سیستم از مجری وضعیت واقعی تسک را می‌پرسد.</p>
+      <p style="font-size:0.8em; color:var(--muted); margin:0 0 8px 0;">ابتدا تسک فعال را انتخاب کنید، سپس سیستم از مجری وضعیت واقعی تسک را در تلگرام می‌پرسد.</p>
       <select id="remind_task_id">
         <option value="">انتخاب تسک برای پیگیری</option>
       </select>
-      <button onclick="sendTaskStatusReminderFromCmd()" style="background: var(--warning); color: #000; margin-top: 8px; font-size: 0.85em; padding: 8px;">
+      <button id="btn-send-remind" onclick="sendTaskStatusReminderFromCmd()" style="background: var(--warning); color: #000; margin-top: 8px; font-size: 0.85em; padding: 8px;">
         🔔 ارسال درخواست اعلام وضعیت به مجری
       </button>
     </div>
@@ -370,32 +387,32 @@
     </p>
 
     <!-- فیلترها -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
+    <div class="filter-bar">
       <div>
-        <label style="margin-top:0;">👤 مجری</label>
+        <label>👤 مجری</label>
         <select id="acc_filter_member" onchange="fetchAccountingData()">
           <option value="">همه مجریان</option>
         </select>
       </div>
       <div>
-        <label style="margin-top:0;">📅 سال</label>
+        <label>📅 سال</label>
         <select id="acc_filter_year" onchange="fetchAccountingData()">
           <option value="">همه سال‌ها</option>
         </select>
       </div>
       <div>
-        <label style="margin-top:0;">🗓 ماه</label>
+        <label>🗓 ماه</label>
         <select id="acc_filter_month" onchange="fetchAccountingData()">
           <option value="">همه ماه‌ها</option>
         </select>
       </div>
     </div>
 
-    <div style="display:flex; gap:6px; margin-bottom:12px;">
-      <button onclick="resetAccountingFilters()" style="background: #334155; padding: 6px 10px; font-size: 0.8em; flex:1; margin-top:0;">
+    <div class="filter-actions">
+      <button onclick="resetAccountingFilters()" style="background: #334155;">
         ♻️ پاک کردن فیلترها
       </button>
-      <button onclick="fetchAccountingData()" style="background: var(--accent); padding: 6px 10px; font-size: 0.8em; flex:1; margin-top:0;">
+      <button onclick="fetchAccountingData()" style="background: var(--accent);">
         🔄 بروزرسانی حسابداری
       </button>
     </div>
@@ -439,7 +456,7 @@
       <label>توضیح پرداخت (مثلاً: تسویه پارت اول یا علی‌الحساب)</label>
       <input type="text" id="acc_pay_desc" placeholder="توضیح پرداخت...">
 
-      <button onclick="submitAccountingPayment()" style="background: var(--success); margin-top: 10px; font-size: 0.88em; padding: 8px;">
+      <button id="btn-submit-payment" onclick="submitAccountingPayment()" style="background: var(--success); margin-top: 10px; font-size: 0.88em; padding: 8px;">
         💳 ثبت پرداخت و اعمال در حسابداری
       </button>
     </div>
@@ -456,7 +473,7 @@
   <!-- ۵. تقویم کل استودیو (مدیریت) -->
   <div id="view-calendar" class="card hidden">
     <h3>📅 تقویم کل استودیو</h3>
-    <p style="color: var(--muted); font-size: 0.85em;">تمامی آفیش‌ها و تسک‌های استودیو مرتب‌شده بر اساس تاریخ شمسی:</p>
+    <p style="color: var(--muted); font-size: 0.85em; margin-bottom: 10px;">تمامی آفیش‌ها و تسک‌های استودیو مرتب‌شده بر اساس تاریخ شمسی:</p>
     
     <!-- فیلترهای تقویم -->
     <div class="filter-bar">
@@ -484,10 +501,9 @@
         </select>
       </div>
     </div>
-    <div style="margin-bottom: 12px;">
-      <button onclick="resetCalendarFilters()" style="background: #334155; padding: 6px 10px; font-size: 0.8em; margin-top:0;">
-        ♻️ پاک کردن فیلترهای تقویم
-      </button>
+    <div class="filter-actions">
+      <button onclick="resetCalendarFilters()" style="background: #334155;">♻️ پاک کردن فیلترها</button>
+      <button onclick="fetchStudioCalendar()" style="background: var(--accent);">🔄 بروزرسانی تقویم</button>
     </div>
 
     <div id="studio-calendar-list">در حال بارگذاری تقویم...</div>
@@ -495,7 +511,7 @@
 
   <!-- مودال اختصاصی ارجاع به پس‌تولید / تدوین‌گر -->
   <div id="cascade-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 12px;">
-    <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; margin-bottom: 0; border: 1px solid #8b5cf6; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; margin-bottom: 0; border: 1px solid var(--purple); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h4 id="cascade_modal_title" style="margin: 0; color: #a78bfa;">🎬 ارجاع پروژه به تدوین / پس‌تولید</h4>
         <button onclick="closeCascadeModal()" style="width: auto; padding: 4px 10px; margin: 0; background: #334155; border-radius: 6px;">✖️</button>
@@ -544,8 +560,8 @@
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    const tg = window.Telegram?.WebApp || { expand: () => {}, initDataUnsafe: {} };
+    if (tg.expand) tg.expand();
 
     const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzOTU0OCwiZXhwIjoyMDk5NzE1NTQ4fQ.XQlPjyGfzye0e-FmelZ2GnrTcC_CDMNsK8bAoa1hSDE";
@@ -561,7 +577,7 @@
     let rawAllProjects = [];
     let rawAllTasks = [];
     let expandedProjects = {};
-    let currentCmdSub = 'active';
+    let projectTasksCache = {};
 
     const SHAMSI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
     const POST_PRODUCTION_ROLES = ["editor", "designer", "ai_artist"];
@@ -571,28 +587,35 @@
       'PENDING_ADMIN_REVIEW': '🔍 منتظر بررسی مدیریت',
       'PENDING_ACCEPTANCE': '📩 منتظر تایید اولیه مجری',
       'UNASSIGNED': '⬜️ بدون مجری',
-      'CANCELLED': '❌ کنسل‌شده'
+      'CANCELLED': '❌ لغوشده / کنسل‌شده',
+      'PENDING': '⏳ در انتظار'
     };
 
     function gregorianToJalali(gy, gm, gd) {
       const gDaysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
       const jDaysInMonth = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+
       let gy2 = gy - 1600;
       let gm2 = gm - 1;
       let gd2 = gd - 1;
+
       let gDayNo = 365 * gy2 + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400);
       for (let i = 0; i < gm2; i++) gDayNo += gDaysInMonth[i];
       if (gm2 > 1 && ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0))) gDayNo += 1;
       gDayNo += gd2;
+
       let jDayNo = gDayNo - 79;
       const jNp = Math.floor(jDayNo / 12053);
       jDayNo %= 12053;
+
       let jy = 979 + 33 * jNp + 4 * Math.floor(jDayNo / 1461);
       jDayNo %= 1461;
+
       if (jDayNo >= 366) {
         jy += Math.floor((jDayNo - 1) / 365);
         jDayNo = (jDayNo - 1) % 365;
       }
+
       let jm = 0;
       for (; jm < 11 && jDayNo >= jDaysInMonth[jm]; jm++) {
         jDayNo -= jDaysInMonth[jm];
@@ -620,7 +643,7 @@
       document.getElementById("cas_parent_task_id").value = parentTaskId || "";
       document.getElementById("cas_project_id").value = projectId || "";
       document.getElementById("cas_client_name").value = clientName || "پروژه";
-      document.getElementById("cascade_modal_title").innerText = `🎬 ارجاع پروژه «${clientName || 'پروژه'}» به تدوین / پس‌تولید`;
+      document.getElementById("cascade_modal_title").innerText = "🎬 ارجاع پروژه «" + (clientName || 'پروژه') + "» به تدوین / پس‌تولید";
       
       document.getElementById("cas_task_count").value = 1;
       document.getElementById("cas_fee_per_task").value = 1200000;
@@ -644,7 +667,7 @@
       activeMembers.forEach(m => {
         const specs = Array.isArray(m.specialties) ? m.specialties.join(" ") : "";
         if (specs.includes(targetKeyword) || !specs) {
-          select.innerHTML += `<option value="${m.chat_id}">👤 ${m.name} (${m.chat_id})</option>`;
+          select.innerHTML += '<option value="' + m.chat_id + '">👤 ' + m.name + ' (' + m.chat_id + ')</option>';
         }
       });
     }
@@ -653,7 +676,7 @@
       const count = parseInt(document.getElementById("cas_task_count").value, 10) || 1;
       const fee = parseInt(document.getElementById("cas_fee_per_task").value, 10) || 0;
       const total = count * fee;
-      document.getElementById("cas_total_summary").innerText = `💰 جمع کل: ${total.toLocaleString('fa-IR')} تومان (${count} خروجی و تسک مجزا)`;
+      document.getElementById("cas_total_summary").innerText = "💰 جمع کل: " + total.toLocaleString('fa-IR') + " تومان (" + count + " خروجی و تسک مجزا)";
     }
 
     async function submitCascadeReferral() {
@@ -668,7 +691,7 @@
       const sDay = document.getElementById("cas_shamsi_day").value;
       const sMonth = document.getElementById("cas_shamsi_month").value;
       const sYear = document.getElementById("cas_shamsi_year").value;
-      const deadlineShamsi = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
+      const deadlineShamsi = sYear + "/" + String(sMonth).padStart(2, '0') + "/" + String(sDay).padStart(2, '0');
       const time = document.getElementById("cas_time").value;
 
       const btn = document.getElementById("cas_submit_btn");
@@ -689,14 +712,14 @@
       };
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=cascade_referral_api`, {
+        const res = await fetch(FUNCTION_URL + "?action=cascade_referral_api", {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify(payload)
         });
         const result = await res.json();
         if (result.success) {
-          alert(`✅ تعداد ${result.created_count} تسک جدید برای «${result.assignee_name || 'مجری'}» با موفقیت ثبت شد و پیشنهاد کار در تلگرام برای او ارسال گردید.`);
+          alert("✅ تعداد " + result.created_count + " تسک جدید برای «" + (result.assignee_name || 'مجری') + "» با موفقیت ثبت شد و پیشنهاد کار در تلگرام برای او ارسال گردید.");
           closeCascadeModal();
           btn.disabled = false;
           btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
@@ -750,14 +773,9 @@
     }
 
     function switchCmdSub(sub) {
-      currentCmdSub = sub;
       document.getElementById("cmd-active-btn").classList.toggle("active", sub === 'active');
       document.getElementById("cmd-completed-btn").classList.toggle("active", sub === 'completed');
       renderCommandProjects(sub);
-    }
-
-    function renderCommandProjectsCurrent() {
-      renderCommandProjects(currentCmdSub);
     }
 
     function switchTab(tab) {
@@ -775,71 +793,79 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const isAdmin = currentUserId === ADMIN_ID || String(currentUserId) === "83013720" || location.search.includes("admin=1");
+      try {
+        const isAdmin = currentUserId === ADMIN_ID || String(currentUserId) === "83013720" || location.search.includes("admin=1");
 
-      populateMonthDropdowns();
-
-      if (isAdmin) {
-        document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
+        populateMonthDropdowns();
         populateShamsiDropdowns("single");
         populateShamsiDropdowns("monthly");
+        populateShamsiDropdowns("cas");
         updateSingleDateLabel();
-        await fetchMembers();
-      } else {
-        const uName = currentUser?.first_name || '';
-        document.getElementById("member-greeting").innerText = `سلام ${uName} عزیز، خوش آمدید.`;
-        await fetchMembers();
-      }
 
-      switchNav('workspace');
+        if (isAdmin) {
+          document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
+        } else {
+          const uName = currentUser?.first_name || '';
+          document.getElementById("member-greeting").innerText = "سلام " + uName + " عزیز، خوش آمدید.";
+        }
+
+        await fetchMembers();
+        switchNav('workspace');
+      } catch (e) {
+        console.error("Init error:", e);
+        document.getElementById("status-bar").innerHTML = '<span class="status-ok">✅ سیستم آنلاین</span>';
+        switchNav('workspace');
+      }
     });
 
     function populateMonthDropdowns() {
-      const dropdownIds = ["acc_filter_month", "cmd_filter_month", "cal_filter_month"];
-      dropdownIds.forEach(id => {
+      const monthSelects = ["acc_filter_month", "cmd_filter_month", "cal_filter_month"];
+      monthSelects.forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
         sel.innerHTML = '<option value="">همه ماه‌ها</option>';
         SHAMSI_MONTHS.forEach((mName, idx) => {
-          sel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
+          sel.innerHTML += '<option value="' + (idx + 1) + '">' + mName + '</option>';
         });
       });
     }
 
     function populateShamsiDropdowns(prefix) {
-      const daySel = document.getElementById(`${prefix}_shamsi_day`);
-      const monthSel = document.getElementById(`${prefix}_shamsi_month`);
-      const yearSel = document.getElementById(`${prefix}_shamsi_year`);
+      const daySel = document.getElementById(prefix + "_shamsi_day");
+      const monthSel = document.getElementById(prefix + "_shamsi_month");
+      const yearSel = document.getElementById(prefix + "_shamsi_year");
       if (!daySel || !monthSel || !yearSel) return;
+
+      const today = getTodayShamsi();
 
       daySel.innerHTML = "";
       for (let d = 1; d <= 31; d++) {
-        daySel.innerHTML += `<option value="${d}">${String(d).padStart(2, '0')}</option>`;
+        daySel.innerHTML += '<option value="' + d + '">' + String(d).padStart(2, '0') + '</option>';
       }
 
       monthSel.innerHTML = "";
       SHAMSI_MONTHS.forEach((mName, idx) => {
-        monthSel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
+        monthSel.innerHTML += '<option value="' + (idx + 1) + '">' + mName + '</option>';
       });
 
       yearSel.innerHTML = "";
-      [1403, 1404, 1405, 1406, 1407].forEach(y => {
-        yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+      const currentYear = today.year || 1405;
+      const yearsList = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+      yearsList.forEach(y => {
+        yearSel.innerHTML += '<option value="' + y + '">' + y + '</option>';
       });
 
-      // تنظیم پیش‌فرض به تاریخ واقعی همان روز
-      const today = getTodayShamsi();
       daySel.value = today.day;
       monthSel.value = today.month;
       yearSel.value = today.year;
 
       const updateSummary = () => {
-        const summaryEl = document.getElementById(`${prefix}_date_summary`);
+        const summaryEl = document.getElementById(prefix + "_date_summary");
         if (summaryEl) {
           const role = document.getElementById("single_role") ? document.getElementById("single_role").value : "";
           const isPostProd = prefix === "single" && POST_PRODUCTION_ROLES.includes(role);
           const prefixLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش";
-          summaryEl.innerText = `${prefixLabel}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+          summaryEl.innerText = prefixLabel + ": " + daySel.value + " " + SHAMSI_MONTHS[monthSel.value - 1] + " " + yearSel.value;
         }
       };
 
@@ -860,7 +886,7 @@
       const yearSel = document.getElementById("single_shamsi_year");
       const summaryEl = document.getElementById("single_date_summary");
       if (summaryEl && daySel && monthSel && yearSel) {
-        summaryEl.innerText = `${isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش"}: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+        summaryEl.innerText = (isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📌 تاریخ آفیش") + ": " + daySel.value + " " + SHAMSI_MONTHS[monthSel.value - 1] + " " + yearSel.value;
       }
     }
 
@@ -873,7 +899,7 @@
           const m = parseInt(parts[1], 10);
           const d = parseInt(parts[2], 10);
           if (!isNaN(m) && m >= 1 && m <= 12) {
-            return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
+            return d + " " + SHAMSI_MONTHS[m - 1] + " " + y;
           }
         }
       }
@@ -898,47 +924,44 @@
           y += 1;
         }
       }
-      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+      return y + "/" + String(m).padStart(2, '0') + "/" + String(d).padStart(2, '0');
     }
 
     async function fetchMembers() {
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_members`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_members", {
           headers: getHeaders()
         });
         const data = await res.json();
         activeMembers = data.members || [];
         
-        const select = document.getElementById("single_assignee");
-        if (select) {
-          select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
+        const singleAssignee = document.getElementById("single_assignee");
+        if (singleAssignee) {
+          singleAssignee.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
           activeMembers.forEach(m => {
-            select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+            singleAssignee.innerHTML += '<option value="' + m.chat_id + '">' + m.name + ' (' + m.chat_id + ')</option>';
           });
         }
 
-        const populateMemberSelect = (selId, defaultLabel) => {
+        const memberSelectIds = ["acc_filter_member", "acc_pay_member", "cmd_filter_member", "cal_filter_member"];
+        memberSelectIds.forEach(selId => {
           const sel = document.getElementById(selId);
           if (!sel) return;
-          sel.innerHTML = `<option value="">${defaultLabel}</option>`;
+          const defaultLabel = selId === 'acc_pay_member' ? 'انتخاب مجری جهت پرداخت' : 'همه مجریان';
+          sel.innerHTML = '<option value="">' + defaultLabel + '</option>';
           const hasAdmin = activeMembers.some(m => Number(m.chat_id) === ADMIN_ID);
           if (!hasAdmin) {
-            sel.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+            sel.innerHTML += '<option value="' + ADMIN_ID + '">رامبد رحیمی (مدیر)</option>';
           }
           activeMembers.forEach(m => {
             const displayName = Number(m.chat_id) === ADMIN_ID ? 'رامبد رحیمی (مدیر)' : m.name;
-            sel.innerHTML += `<option value="${m.chat_id}">${displayName}</option>`;
+            sel.innerHTML += '<option value="' + m.chat_id + '">' + displayName + '</option>';
           });
-        };
+        });
 
-        populateMemberSelect("acc_filter_member", "همه مجریان");
-        populateMemberSelect("acc_pay_member", "انتخاب مجری جهت پرداخت");
-        populateMemberSelect("cmd_filter_member", "همه مجریان");
-        populateMemberSelect("cal_filter_member", "همه مجریان");
-
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
+        document.getElementById("status-bar").innerHTML = '<span class="status-ok">✅ سیستم آنلاین (' + activeMembers.length + ' عضو فعال)</span>';
       } catch (err) {
-        document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین</span>`;
+        document.getElementById("status-bar").innerHTML = '<span class="status-ok">✅ سیستم آنلاین</span>';
       }
     }
 
@@ -947,14 +970,14 @@
       container.innerText = "در حال دریافت تسک‌ها...";
       try {
         const uid = currentUserId || ADMIN_ID;
-        const res = await fetch(`${FUNCTION_URL}?action=get_user_tasks&chat_id=${uid}`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_user_tasks&chat_id=" + uid, {
           headers: getHeaders()
         });
         const data = await res.json();
         rawUserTasks = data.tasks || [];
         renderMemberTasks('active');
       } catch (err) {
-        container.innerHTML = `<div style="text-align:center; padding:10px;">در حال حاضر هیچ تسکی یافت نشد.<br><button onclick="fetchMemberTasks()" style="margin-top:8px; padding:6px; font-size:0.8em; background:#334155;">🔄 تلاش مجدد</button></div>`;
+        container.innerHTML = '<div style="text-align:center; padding:10px;">در حال حاضر هیچ تسکی یافت نشد.<br><button onclick="fetchMemberTasks()" style="margin-top:8px; padding:6px; font-size:0.8em; background:#334155;">🔄 تلاش مجدد</button></div>';
       }
     }
 
@@ -965,17 +988,17 @@
         return;
       }
 
-      // اصلاح شرط: تسک‌های کنسل‌شده از تب فعال خارج شده و به بخش بایگانی منتقل می‌شوند
+      // Fix Bug 1: Exclude CANCELLED from Active tasks, and include in Archive
       const filtered = rawUserTasks.filter(t => {
-        if (filterType === 'completed') {
-          return t.status === 'COMPLETED' || t.status === 'CANCELLED';
+        if (filterType === 'active') {
+          return t.status === 'ACCEPTED' || t.status === 'PENDING_ACCEPTANCE' || t.status === 'PENDING_ADMIN_REVIEW';
         } else {
-          return t.status !== 'COMPLETED' && t.status !== 'CANCELLED';
+          return t.status === 'COMPLETED' || t.status === 'CANCELLED';
         }
       });
 
       if (filtered.length === 0) {
-        container.innerText = filterType === 'completed' ? "هیچ تسک اتمام‌یافته یا بایگانی‌شده‌ای وجود ندارد." : "هیچ تسک فعالی ندارید.";
+        container.innerText = filterType === 'completed' ? "هیچ تسکی در بایگانی شما وجود ندارد." : "هیچ تسک فعالی ندارید.";
         return;
       }
 
@@ -985,18 +1008,17 @@
         const isPendingReview = t.status === 'PENDING_ADMIN_REVIEW';
         const statusText = STATUS_MAP[t.status] || t.status;
         const itemClass = isCompleted ? 'task-completed' : (isCancelled ? 'task-cancelled' : '');
-        return `
-          <div class="task-item ${itemClass}">
-            <strong>${t.title}</strong><br>
-            <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-            <small style="color: ${isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)')}; font-weight: bold;">وضعیت: ${statusText}</small>
-            ${(!isCompleted && !isCancelled && !isPendingReview) ? `
-              <button onclick="finishTaskByMember('${t.id}')" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">
-                🏁 اعلام اتمام این تسک
-              </button>
-            ` : ''}
-          </div>
-        `;
+
+        let html = '<div class="task-item ' + itemClass + '">';
+        html += '<strong>' + t.title + '</strong><br>';
+        html += '<small>📅 تاریخ/ددلاین: <strong>' + formatShamsiLabel(t.scheduled_date) + '</strong> | ⏰ ساعت: ' + (t.scheduled_time || '14:00') + '</small><br>';
+        html += '<small style="color: ' + (isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)')) + '; font-weight: bold;">وضعیت: ' + statusText + '</small>';
+        
+        if (!isCompleted && !isCancelled && !isPendingReview) {
+          html += '<button onclick="finishTaskByMember(\'' + t.id + '\')" style="background: var(--success); font-size: 0.8em; margin-top: 8px;">🏁 اعلام اتمام این تسک</button>';
+        }
+        html += '</div>';
+        return html;
       }).join("");
     }
 
@@ -1004,7 +1026,7 @@
       if (!confirm("آیا از اعلام اتمام این تسک به مدیریت اطمینان دارید؟")) return;
       try {
         const uid = currentUserId || ADMIN_ID;
-        const res = await fetch(`${FUNCTION_URL}?action=finish_task_api&task_id=${taskId}&chat_id=${uid}`, {
+        const res = await fetch(FUNCTION_URL + "?action=finish_task_api&task_id=" + taskId + "&chat_id=" + uid, {
           method: 'POST',
           headers: getHeaders()
         });
@@ -1023,30 +1045,42 @@
       const container = document.getElementById("command-projects-list");
       container.innerText = "در حال دریافت لیست پروژه‌ها...";
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_all_projects`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_all_projects", {
           headers: getHeaders()
         });
         const data = await res.json();
         rawAllProjects = data.projects || [];
-        renderCommandProjects(currentCmdSub);
+        renderCommandProjects('active');
         await populateRemindTasksDropdown();
       } catch (err) {
         container.innerText = "خطا در دریافت لیست پروژه‌ها.";
       }
     }
 
+    function applyCommandFilters() {
+      const sub = document.getElementById("cmd-active-btn").classList.contains("active") ? 'active' : 'completed';
+      renderCommandProjects(sub);
+    }
+
+    function resetCommandFilters() {
+      document.getElementById("cmd_filter_member").value = "";
+      document.getElementById("cmd_filter_role").value = "";
+      document.getElementById("cmd_filter_month").value = "";
+      applyCommandFilters();
+    }
+
     async function populateRemindTasksDropdown() {
       const sel = document.getElementById("remind_task_id");
       if (!sel) return;
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_all_tasks`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_all_tasks", {
           headers: getHeaders()
         });
         const data = await res.json();
         const activeTasks = (data.tasks || []).filter(t => t.status === 'ACCEPTED' || t.status === 'PENDING_ACCEPTANCE');
         sel.innerHTML = '<option value="">انتخاب تسک برای پیگیری</option>';
         activeTasks.forEach(t => {
-          sel.innerHTML += `<option value="${t.id}">${t.title} (${t.assignee_name || 'مجری'})</option>`;
+          sel.innerHTML += '<option value="' + t.id + '">' + t.title + ' (' + (t.assignee_name || 'مجری') + ')</option>';
         });
       } catch (e) {}
     }
@@ -1057,27 +1091,24 @@
         alert("لطفاً ابتدا یک تسک فعال را انتخاب فرمایید.");
         return;
       }
+      const btn = document.getElementById("btn-send-remind");
+      btn.disabled = true;
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${taskId}&admin_id=${ADMIN_ID}`, {
+        const res = await fetch(FUNCTION_URL + "?action=send_task_status_reminder_api&task_id=" + taskId + "&admin_id=" + ADMIN_ID, {
           method: 'POST',
           headers: getHeaders()
         });
         const result = await res.json();
+        btn.disabled = false;
         if (result.success) {
           alert("درخواست پیگیری وضعیت تسک به مجری مربوطه در تلگرام ارسال شد.");
         } else {
           alert(result.error || "خطا در ارسال درخواست پیگیری.");
         }
       } catch (e) {
+        btn.disabled = false;
         alert("خطا در ارتباط با سرور.");
       }
-    }
-
-    function resetCommandFilters() {
-      document.getElementById("cmd_filter_member").value = "";
-      document.getElementById("cmd_filter_role").value = "";
-      document.getElementById("cmd_filter_month").value = "";
-      renderCommandProjectsCurrent();
     }
 
     function renderCommandProjects(filterType) {
@@ -1087,54 +1118,43 @@
         return;
       }
 
-      const memberFilter = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
-      const roleFilter = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
-      const monthFilter = document.getElementById("cmd_filter_month") ? document.getElementById("cmd_filter_month").value : "";
+      const fMember = document.getElementById("cmd_filter_member")?.value || "";
+      const fRole = document.getElementById("cmd_filter_role")?.value || "";
+      const fMonth = document.getElementById("cmd_filter_month")?.value || "";
 
       let filtered = rawAllProjects.filter(p => filterType === 'completed' ? p.status === 'COMPLETED' : p.status !== 'COMPLETED');
 
-      if (monthFilter) {
+      if (fMonth) {
         filtered = filtered.filter(p => {
-          if (!p.deadline) return false;
-          const parts = p.deadline.split('/');
-          return parts.length >= 2 && parseInt(parts[1], 10) === parseInt(monthFilter, 10);
+          if (!p.deadline || !p.deadline.includes("/")) return true;
+          const m = parseInt(p.deadline.split("/")[1], 10);
+          return m === parseInt(fMonth, 10);
         });
       }
 
-      if (roleFilter) {
-        filtered = filtered.filter(p => p.service_type === roleFilter || (p.tasks && p.tasks.some(t => t.role_required === roleFilter)));
-      }
-
       if (filtered.length === 0) {
-        container.innerText = filterType === 'completed' ? "هیچ پروژه اتمام‌یافته‌ای با این فیلترها وجود ندارد." : "هیچ پروژه فعالی با این فیلترها وجود ندارد.";
+        container.innerText = filterType === 'completed' ? "هیچ پروژه اتمام‌یافته‌ای با فیلترهای انتخابی وجود ندارد." : "هیچ پروژه فعالی با فیلترهای انتخابی وجود ندارد.";
         return;
       }
 
       container.innerHTML = filtered.map(p => {
         const isCompleted = p.status === 'COMPLETED';
         const isExpanded = expandedProjects[p.id] || false;
-        return `
-          <div class="task-item ${isCompleted ? 'task-completed' : ''}">
-            <strong>📁 ${p.client_name}</strong> <small>(${p.service_type || 'پروژه'})</small><br>
-            <small>📅 ددلاین/تاریخ: ${formatShamsiLabel(p.deadline)}</small><br>
-            <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'};">وضعیت: ${isCompleted ? '🏁 اتمام یافته (بایگانی)' : '🟢 فعال'}</small><br>
-            
-            <div class="btn-action-row">
-              <button onclick="toggleProjectTasks('${p.id}')" style="background: var(--accent);">
-                ${isExpanded ? '🔽 بستن مدیریت تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها'}
-              </button>
-              <button onclick="toggleProjectStatus('${p.id}')" style="background: #334155;">
-                ${isCompleted ? '🟢 فعال‌سازی' : '🏁 بایگانی'}
-              </button>
-              <button onclick="deleteProject('${p.id}')" style="background: var(--danger);">
-                🗑 حذف کل
-              </button>
-            </div>
-            <div id="project-tasks-box-${p.id}" class="${isExpanded ? '' : 'hidden'} tasks-subbox">
-              در حال دریافت تسک‌های پروژه...
-            </div>
-          </div>
-        `;
+        
+        let html = '<div class="task-item ' + (isCompleted ? 'task-completed' : '') + '">';
+        html += '<strong>📁 ' + p.client_name + '</strong> <small>(' + (p.service_type || 'پروژه') + ')</small><br>';
+        html += '<small>📅 ددلاین/تاریخ: ' + formatShamsiLabel(p.deadline) + '</small><br>';
+        html += '<small style="color: ' + (isCompleted ? 'var(--success)' : 'var(--accent)') + ';">وضعیت: ' + (isCompleted ? '🏁 اتمام یافته (بایگانی)' : '🟢 فعال') + '</small><br>';
+        
+        html += '<div class="btn-action-row">';
+        html += '<button onclick="toggleProjectTasks(\'' + p.id + '\')" style="background: var(--accent);">' + (isExpanded ? '🔽 بستن مدیریت تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها') + '</button>';
+        html += '<button onclick="toggleProjectStatus(\'' + p.id + '\')" style="background: #334155;">' + (isCompleted ? '🟢 فعال‌سازی' : '🏁 بایگانی') + '</button>';
+        html += '<button onclick="deleteProject(\'' + p.id + '\')" style="background: var(--danger);">🗑 حذف کل</button>';
+        html += '</div>';
+
+        html += '<div id="project-tasks-box-' + p.id + '" class="' + (isExpanded ? '' : 'hidden') + ' tasks-subbox">در حال دریافت تسک‌های پروژه...</div>';
+        html += '</div>';
+        return html;
       }).join("");
 
       Object.keys(expandedProjects).forEach(pid => {
@@ -1146,7 +1166,7 @@
 
     async function toggleProjectTasks(projectId) {
       expandedProjects[projectId] = !expandedProjects[projectId];
-      const subbox = document.getElementById(`project-tasks-box-${projectId}`);
+      const subbox = document.getElementById("project-tasks-box-" + projectId);
       if (subbox) {
         if (expandedProjects[projectId]) {
           subbox.classList.remove("hidden");
@@ -1158,49 +1178,51 @@
     }
 
     async function loadProjectTasksInBox(projectId) {
-      const subbox = document.getElementById(`project-tasks-box-${projectId}`);
+      const subbox = document.getElementById("project-tasks-box-" + projectId);
       if (!subbox) return;
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_project_tasks_api&project_id=${projectId}`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_project_tasks_api&project_id=" + projectId, {
           headers: getHeaders()
         });
         const data = await res.json();
         let tasks = data.tasks || [];
-        
-        const memberFilter = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
-        const roleFilter = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
-        
-        if (memberFilter) {
-          tasks = tasks.filter(t => String(t.assigned_to_id) === String(memberFilter));
+        projectTasksCache[projectId] = tasks;
+
+        const fMember = document.getElementById("cmd_filter_member")?.value || "";
+        const fRole = document.getElementById("cmd_filter_role")?.value || "";
+
+        if (fMember) {
+          tasks = tasks.filter(t => String(t.assigned_to_id) === String(fMember));
         }
-        if (roleFilter) {
-          tasks = tasks.filter(t => t.role_required === roleFilter);
+        if (fRole) {
+          tasks = tasks.filter(t => t.role_required === fRole);
         }
 
         if (tasks.length === 0) {
-          subbox.innerText = "هیچ تسکی با فیلترهای انتخابی برای این پروژه یافت نشد.";
+          subbox.innerText = "هیچ تسکی برای این پروژه (با فیلترهای فعلی) یافت نشد.";
           return;
         }
-        let html = `<h5>📋 تسک‌های این پروژه:</h5>`;
+
+        let html = '<h5>📋 تسک‌های این پروژه:</h5>';
         tasks.forEach(t => {
           const assigneeName = t.members?.name || 'تخصیص‌نیافته';
           const statusLabel = STATUS_MAP[t.status] || t.status;
-          html += `
-            <div style="border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 8px;">
-              <strong>📌 ${t.title}</strong><br>
-              <small>📅 تاریخ: ${formatShamsiLabel(t.scheduled_date)} | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-              <small>💰 دستمزد: <strong>${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} تومان</strong> | 👤 مجری: <strong>${assigneeName}</strong></small><br>
-              <small>وضعیت: <strong>${statusLabel}</strong></small>
-              
-              <div class="btn-action-row" style="flex-wrap: wrap;">
-                <button onclick="openCascadeModal('${t.id}', '${projectId}', '${t.title.replace(/'/g, "\\'")}')" style="background: #8b5cf6; font-weight: bold; flex: 1 1 100%; margin-bottom: 4px;">🎬 ارجاع این آفیش به تدوین‌گر</button>
-                <button onclick="editTaskFee('${t.id}', '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
-                <button onclick="editTaskAssignee('${t.id}')" style="background: #334155;">👤 مجری</button>
-                <button onclick="toggleTaskStatus('${t.id}', '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
-                <button onclick="deleteTask('${t.id}', '${projectId}')" style="background: var(--danger);">🗑 حذف</button>
-              </div>
-            </div>
-          `;
+          const isCancelled = t.status === 'CANCELLED';
+          
+          html += '<div style="border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 8px; ' + (isCancelled ? 'opacity: 0.7;' : '') + '">';
+          html += '<strong>📌 ' + t.title + '</strong><br>';
+          html += '<small>📅 تاریخ: ' + formatShamsiLabel(t.scheduled_date) + ' | ⏰ ساعت: ' + (t.scheduled_time || '14:00') + '</small><br>';
+          html += '<small>💰 دستمزد: <strong>' + Number(t.fixed_fee || 0).toLocaleString('fa-IR') + ' تومان</strong> | 👤 مجری: <strong>' + assigneeName + '</strong></small><br>';
+          html += '<small>وضعیت: <strong style="color:' + (isCancelled ? 'var(--danger)' : 'var(--accent)') + ';">' + statusLabel + '</strong></small>';
+          
+          const escapedTitle = t.title.replace(/'/g, "\\'");
+          html += '<div class="btn-action-row" style="flex-wrap: wrap;">';
+          html += '<button onclick="openCascadeModal(\'' + t.id + '\', \'' + projectId + '\', \'' + escapedTitle + '\')" style="background: var(--purple); font-weight: bold; flex: 1 1 100%; margin-bottom: 4px;">🎬 ارجاع این آفیش به تدوین‌گر</button>';
+          html += '<button onclick="editTaskFee(\'' + t.id + '\', \'' + (t.fixed_fee || 0) + '\')" style="background: #334155;">💰 دستمزد</button>';
+          html += '<button onclick="editTaskAssignee(\'' + t.id + '\')" style="background: #334155;">👤 مجری</button>';
+          html += '<button onclick="toggleTaskStatus(\'' + t.id + '\', \'' + projectId + '\')" style="background: #334155;">🏁 وضعیت</button>';
+          html += '<button onclick="deleteTask(\'' + t.id + '\', \'' + projectId + '\')" style="background: var(--danger);">🗑 حذف</button>';
+          html += '</div></div>';
         });
         subbox.innerHTML = html;
       } catch (e) {
@@ -1213,7 +1235,7 @@
       if (newFeeStr !== null) {
         const newFee = parseInt(newFeeStr.replace(/,/g, ''), 10);
         if (!isNaN(newFee) && newFee >= 0) {
-          await fetch(`${FUNCTION_URL}?action=update_task_fee_api&task_id=${taskId}&fee=${newFee}`, {
+          await fetch(FUNCTION_URL + "?action=update_task_fee_api&task_id=" + taskId + "&fee=" + newFee, {
             method: 'POST',
             headers: getHeaders()
           });
@@ -1227,13 +1249,13 @@
         alert("هیچ عضو فعالی یافت نشد.");
         return;
       }
-      let options = activeMembers.map((m, i) => `${i + 1}. ${m.name} (${m.chat_id})`).join("\n");
-      const choiceStr = prompt(`لطفاً شماره مجری جدید را انتخاب کنید:\n\n${options}`);
+      let memberListText = activeMembers.map((m, i) => (i + 1) + ". " + m.name + " (" + m.chat_id + ")").join("\n");
+      const choiceStr = prompt("لطفاً شماره مجری جدید را انتخاب کنید:\n\n" + memberListText);
       if (choiceStr) {
         const choiceIdx = parseInt(choiceStr, 10) - 1;
         if (!isNaN(choiceIdx) && activeMembers[choiceIdx]) {
           const selectedMember = activeMembers[choiceIdx];
-          await fetch(`${FUNCTION_URL}?action=assign_task_assignee_api&task_id=${taskId}&assignee_id=${selectedMember.chat_id}&admin_id=${ADMIN_ID}`, {
+          await fetch(FUNCTION_URL + "?action=assign_task_assignee_api&task_id=" + taskId + "&assignee_id=" + selectedMember.chat_id + "&admin_id=" + ADMIN_ID, {
             method: 'POST',
             headers: getHeaders()
           });
@@ -1243,7 +1265,7 @@
     }
 
     async function toggleTaskStatus(taskId, projectId) {
-      await fetch(`${FUNCTION_URL}?action=toggle_task_status_api&task_id=${taskId}`, {
+      await fetch(FUNCTION_URL + "?action=toggle_task_status_api&task_id=" + taskId, {
         method: 'POST',
         headers: getHeaders()
       });
@@ -1252,7 +1274,7 @@
 
     async function deleteTask(taskId, projectId) {
       if (!confirm("آیا از حذف این تسک اطمینان دارید؟")) return;
-      await fetch(`${FUNCTION_URL}?action=delete_task_api&task_id=${taskId}`, {
+      await fetch(FUNCTION_URL + "?action=delete_task_api&task_id=" + taskId, {
         method: 'POST',
         headers: getHeaders()
       });
@@ -1261,7 +1283,7 @@
 
     async function deleteProject(projectId) {
       if (!confirm("آیا از حذف کامل این پروژه و تمامی تسک‌های آن اطمینان دارید؟")) return;
-      await fetch(`${FUNCTION_URL}?action=delete_project_api&project_id=${projectId}`, {
+      await fetch(FUNCTION_URL + "?action=delete_project_api&project_id=" + projectId, {
         method: 'POST',
         headers: getHeaders()
       });
@@ -1270,7 +1292,7 @@
 
     async function toggleProjectStatus(projectId) {
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=toggle_project_status_api&project_id=${projectId}`, {
+        const res = await fetch(FUNCTION_URL + "?action=toggle_project_status_api&project_id=" + projectId, {
           method: 'POST',
           headers: getHeaders()
         });
@@ -1282,18 +1304,11 @@
       }
     }
 
-    function resetCalendarFilters() {
-      document.getElementById("cal_filter_member").value = "";
-      document.getElementById("cal_filter_role").value = "";
-      document.getElementById("cal_filter_month").value = "";
-      renderStudioCalendar();
-    }
-
     async function fetchStudioCalendar() {
       const container = document.getElementById("studio-calendar-list");
       container.innerText = "در حال دریافت تقویم استودیو...";
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_all_tasks`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_all_tasks", {
           headers: getHeaders()
         });
         const data = await res.json();
@@ -1311,28 +1326,28 @@
         return;
       }
 
-      const memberFilter = document.getElementById("cal_filter_member") ? document.getElementById("cal_filter_member").value : "";
-      const roleFilter = document.getElementById("cal_filter_role") ? document.getElementById("cal_filter_role").value : "";
-      const monthFilter = document.getElementById("cal_filter_month") ? document.getElementById("cal_filter_month").value : "";
+      const fMember = document.getElementById("cal_filter_member")?.value || "";
+      const fRole = document.getElementById("cal_filter_role")?.value || "";
+      const fMonth = document.getElementById("cal_filter_month")?.value || "";
 
       let filtered = [...rawAllTasks];
 
-      if (memberFilter) {
-        filtered = filtered.filter(t => String(t.assigned_to_id) === String(memberFilter));
+      if (fMember) {
+        filtered = filtered.filter(t => String(t.assigned_to_id) === String(fMember));
       }
-      if (roleFilter) {
-        filtered = filtered.filter(t => t.role_required === roleFilter);
+      if (fRole) {
+        filtered = filtered.filter(t => t.role_required === fRole);
       }
-      if (monthFilter) {
+      if (fMonth) {
         filtered = filtered.filter(t => {
-          if (!t.scheduled_date) return false;
-          const parts = t.scheduled_date.split('/');
-          return parts.length >= 2 && parseInt(parts[1], 10) === parseInt(monthFilter, 10);
+          if (!t.scheduled_date || !t.scheduled_date.includes("/")) return true;
+          const m = parseInt(t.scheduled_date.split("/")[1], 10);
+          return m === parseInt(fMonth, 10);
         });
       }
 
       if (filtered.length === 0) {
-        container.innerText = "هیچ تسکی با فیلترهای انتخابی یافت نشد.";
+        container.innerText = "هیچ تسکی با فیلترهای انتخابی در تقویم یافت نشد.";
         return;
       }
 
@@ -1344,15 +1359,22 @@
         const statusText = STATUS_MAP[t.status] || t.status;
         const assigneeName = t.assignee_name || (t.members && t.members.name) || 'تخصیص‌نیافته';
         const itemClass = isCompleted ? 'task-completed' : (isCancelled ? 'task-cancelled' : '');
-        return `
-          <div class="task-item ${itemClass}">
-            <strong>${idx + 1}. ${t.title}</strong><br>
-            <small>📅 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
-            <small>👤 مجری: <strong>${assigneeName}</strong></small><br>
-            <small style="color: ${isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)')}; font-weight: bold;">وضعیت: ${statusText}</small>
-          </div>
-        `;
+
+        let html = '<div class="task-item ' + itemClass + '">';
+        html += '<strong>' + (idx + 1) + '. ' + t.title + '</strong><br>';
+        html += '<small>📅 ' + dLabel + ': <strong>' + formatShamsiLabel(t.scheduled_date) + '</strong> | ⏰ ساعت: ' + (t.scheduled_time || '14:00') + '</small><br>';
+        html += '<small>👤 مجری: <strong>' + assigneeName + '</strong></small><br>';
+        html += '<small style="color: ' + (isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)')) + '; font-weight: bold;">وضعیت: ' + statusText + '</small>';
+        html += '</div>';
+        return html;
       }).join("");
+    }
+
+    function resetCalendarFilters() {
+      document.getElementById("cal_filter_member").value = "";
+      document.getElementById("cal_filter_role").value = "";
+      document.getElementById("cal_filter_month").value = "";
+      renderStudioCalendar();
     }
 
     async function fetchAccountingData() {
@@ -1366,7 +1388,7 @@
       paymentsContainer.innerText = "در حال دریافت تاریخچه پرداخت‌ها...";
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_accounting_data_api&admin_id=${ADMIN_ID}&member_id=${encodeURIComponent(memberId)}&year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_accounting_data_api&admin_id=" + ADMIN_ID + "&member_id=" + encodeURIComponent(memberId) + "&year=" + encodeURIComponent(year) + "&month=" + encodeURIComponent(month), {
           headers: getHeaders()
         });
         const data = await res.json();
@@ -1384,32 +1406,34 @@
         const currentYearVal = yearSel.value;
         yearSel.innerHTML = '<option value="">همه سال‌ها</option>';
         (data.years || [1403, 1404, 1405, 1406, 1407]).forEach(y => {
-          yearSel.innerHTML += `<option value="${y}" ${String(y) === String(currentYearVal) ? 'selected' : ''}>${y}</option>`;
+          yearSel.innerHTML += '<option value="' + y + '" ' + (String(y) === String(currentYearVal) ? 'selected' : '') + '>' + y + '</option>';
         });
 
         if (!data.rows || data.rows.length === 0) {
           tasksContainer.innerText = "هیچ تسکی با فیلترهای انتخابی یافت نشد.";
         } else {
-          tasksContainer.innerHTML = data.rows.map(r => `
-            <div class="task-item" style="border-right-color: ${r.remaining > 0 ? '#f87171' : 'var(--success)'};">
-              <strong>📌 ${r.title}</strong><br>
-              <small>👤 مجری: <strong>${r.member_name}</strong> | 📅 تاریخ: <strong>${formatShamsiLabel(r.scheduled_date)}</strong></small><br>
-              <small>💰 دستمزد: ${Number(r.fee || 0).toLocaleString('fa-IR')} ت | بدهی تاییدشده: <strong style="color:#f87171;">${Number(r.approved_debt || 0).toLocaleString('fa-IR')} ت</strong></small><br>
-              <small>💳 پرداختی: <span style="color:var(--success);">${Number(r.paid || 0).toLocaleString('fa-IR')} ت</span> | مانده: <strong style="color:var(--warning);">${Number(r.remaining || 0).toLocaleString('fa-IR')} ت</strong></small>
-            </div>
-          `).join("");
+          tasksContainer.innerHTML = data.rows.map(r => {
+            let html = '<div class="task-item" style="border-right-color: ' + (r.remaining > 0 ? '#f87171' : 'var(--success)') + ';">';
+            html += '<strong>📌 ' + r.title + '</strong><br>';
+            html += '<small>👤 مجری: <strong>' + r.member_name + '</strong> | 📅 تاریخ: <strong>' + formatShamsiLabel(r.scheduled_date) + '</strong></small><br>';
+            html += '<small>💰 دستمزد: ' + Number(r.fee || 0).toLocaleString('fa-IR') + ' ت | بدهی تاییدشده: <strong style="color:#f87171;">' + Number(r.approved_debt || 0).toLocaleString('fa-IR') + ' ت</strong></small><br>';
+            html += '<small>💳 پرداختی: <span style="color:var(--success);">' + Number(r.paid || 0).toLocaleString('fa-IR') + ' ت</span> | مانده: <strong style="color:var(--warning);">' + Number(r.remaining || 0).toLocaleString('fa-IR') + ' ت</strong></small>';
+            html += '</div>';
+            return html;
+          }).join("");
         }
 
         if (!data.payments || data.payments.length === 0) {
           paymentsContainer.innerText = "هیچ پرداختی در این دوره ثبت نشده است.";
         } else {
-          paymentsContainer.innerHTML = data.payments.map(p => `
-            <div class="task-item" style="border-right-color: var(--success);">
-              <strong>💳 ${p.description || 'تسویه حساب'}</strong><br>
-              <small>👤 مجری: <strong>${p.member_name}</strong> | 📌 Task: ${p.task_title || 'تسویه کلی'}</small><br>
-              <small>💰 مبلغ: <strong style="color:var(--success);">${Number(p.amount || 0).toLocaleString('fa-IR')} تومان</strong> | 📅 تاریخ: ${formatShamsiLabel(p.paid_shamsi_date || '')}</small>
-            </div>
-          `).join("");
+          paymentsContainer.innerHTML = data.payments.map(p => {
+            let html = '<div class="task-item" style="border-right-color: var(--success);">';
+            html += '<strong>💳 ' + (p.description || 'تسویه حساب') + '</strong><br>';
+            html += '<small>👤 مجری: <strong>' + p.member_name + '</strong> | 📌 Task: ' + (p.task_title || 'تسویه کلی') + '</small><br>';
+            html += '<small>💰 مبلغ: <strong style="color:var(--success);">' + Number(p.amount || 0).toLocaleString('fa-IR') + ' تومان</strong> | 📅 تاریخ: ' + formatShamsiLabel(p.paid_shamsi_date || '') + '</small>';
+            html += '</div>';
+            return html;
+          }).join("");
         }
       } catch (err) {
         tasksContainer.innerText = "خطا در دریافت اطلاعات حسابداری.";
@@ -1430,12 +1454,12 @@
       if (!memberId) return;
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_accounting_payment_tasks_api&admin_id=${ADMIN_ID}&member_id=${memberId}`, {
+        const res = await fetch(FUNCTION_URL + "?action=get_accounting_payment_tasks_api&admin_id=" + ADMIN_ID + "&member_id=" + memberId, {
           headers: getHeaders()
         });
         const data = await res.json();
         (data.tasks || []).forEach(t => {
-          taskSel.innerHTML += `<option value="${t.id}">📌 ${t.title} (${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} ت)</option>`;
+          taskSel.innerHTML += '<option value="' + t.id + '">📌 ' + t.title + ' (' + Number(t.fixed_fee || 0).toLocaleString('fa-IR') + ' ت)</option>';
         });
       } catch (e) {}
     }
@@ -1451,12 +1475,16 @@
         return;
       }
 
+      const btn = document.getElementById("btn-submit-payment");
+      btn.disabled = true;
+
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId || '')}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
+        const res = await fetch(FUNCTION_URL + "?action=record_payment_api&admin_id=" + ADMIN_ID + "&member_id=" + memberId + "&task_id=" + encodeURIComponent(taskId || '') + "&amount=" + amount + "&desc=" + encodeURIComponent(desc || 'تسویه حساب'), {
           method: 'POST',
           headers: getHeaders()
         });
         const result = await res.json();
+        btn.disabled = false;
         if (result.success) {
           alert("پرداخت با موفقیت ثبت شد و از حساب مجری کسر گردید.");
           document.getElementById("acc_pay_amount").value = "";
@@ -1466,6 +1494,7 @@
           alert(result.error || "خطا در ثبت پرداخت.");
         }
       } catch (e) {
+        btn.disabled = false;
         alert("خطا در ارتباط با سرور.");
       }
     }
@@ -1476,7 +1505,7 @@
       const sDay = document.getElementById("single_shamsi_day").value;
       const sMonth = document.getElementById("single_shamsi_month").value;
       const sYear = document.getElementById("single_shamsi_year").value;
-      const shamsiDate = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
+      const shamsiDate = sYear + "/" + String(sMonth).padStart(2, '0') + "/" + String(sDay).padStart(2, '0');
       const time = document.getElementById("single_time").value;
       const role = document.getElementById("single_role").value;
       const assignee = document.getElementById("single_assignee").value;
@@ -1495,7 +1524,7 @@
       const payload = {
         action: "create_single_project",
         brand,
-        title: title || `آفیش ${brand}`,
+        title: title || ("آفیش " + brand),
         date: shamsiDate,
         time,
         role,
@@ -1506,29 +1535,28 @@
       };
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=create_single_project_api`, {
+        const res = await fetch(FUNCTION_URL + "?action=create_single_project_api", {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify(payload)
         });
         const result = await res.json();
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت نهایی پروژه تکی";
+
         if (result.success) {
           alert("✅ پروژه تکی با موفقیت در سیستم ثبت شد و پیشنهاد تسک برای مجری ارسال گردید.");
           document.getElementById("single_brand").value = "";
           document.getElementById("single_title").value = "";
           document.getElementById("single_location").value = "";
-          btn.disabled = false;
-          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
           switchNav('command');
         } else {
           alert(result.error || "خطا در ثبت پروژه تکی.");
-          btn.disabled = false;
-          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
         }
       } catch (err) {
-        alert("خطا در ارتباط با سرور.");
         btn.disabled = false;
         btn.innerText = "🚀 ثبت نهایی پروژه تکی";
+        alert("خطا در ارتباط با سرور.");
       }
     }
 
@@ -1554,7 +1582,7 @@
         let date = addShamsiDays(sYear, sMonth, sDay, (i + 1) * shootInterval);
         calculatedTasks.push({
           type: "OFFISH_VIDEO",
-          title: `🎥 آفیش ویدیو ${i + 1} - ${brand}`,
+          title: "🎥 آفیش ویدیو " + (i + 1) + " - " + brand,
           date,
           role: "filmmaker",
           fee: 1500000,
@@ -1566,7 +1594,7 @@
         let date = addShamsiDays(sYear, sMonth, sDay, (i + 1) * shootInterval + 2);
         calculatedTasks.push({
           type: "OFFISH_PHOTO",
-          title: `📷 آفیش عکس ${i + 1} - ${brand}`,
+          title: "📷 آفیش عکس " + (i + 1) + " - " + brand,
           date,
           role: "photographer",
           fee: 1000000,
@@ -1581,7 +1609,7 @@
 
         calculatedTasks.push({
           type: "POST_PROD_EDITOR",
-          title: `🎬 تدوین پست ${i + 1} - ${brand}`,
+          title: "🎬 تدوین پست " + (i + 1) + " - " + brand,
           date: editDeadline,
           role: "editor",
           fee: 1200000,
@@ -1590,7 +1618,7 @@
 
         calculatedTasks.push({
           type: "INSTAGRAM_POST",
-          title: `📱 انتشار پست ${i + 1} - ${brand}`,
+          title: "📱 انتشار پست " + (i + 1) + " - " + brand,
           date: postDate,
           role: "admin",
           fee: 0,
@@ -1611,32 +1639,29 @@
 
       let memberOptions = '<option value="">🔍 بدون مجری (تخصیص بعداً)</option>';
       activeMembers.forEach(m => {
-        memberOptions += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+        memberOptions += '<option value="' + m.chat_id + '">' + m.name + ' (' + m.chat_id + ')</option>';
       });
 
       calculatedTasks.forEach((t, index) => {
         if (t.type === "INSTAGRAM_POST") {
-          postsDiv.innerHTML += `
-            <div class="task-item" style="border-right-color: var(--warning);">
-              <strong>${t.title}</strong><br>
-              <small>📅 تاریخ انتشار: <strong>${formatShamsiLabel(t.date)}</strong></small>
-            </div>
-          `;
+          let html = '<div class="task-item" style="border-right-color: var(--warning);">';
+          html += '<strong>' + t.title + '</strong><br>';
+          html += '<small>📅 تاریخ انتشار: <strong>' + formatShamsiLabel(t.date) + '</strong></small>';
+          html += '</div>';
+          postsDiv.innerHTML += html;
         } else {
           const isPostProd = POST_PRODUCTION_ROLES.includes(t.role);
           const dLabel = isPostProd ? "⏳ مهلت تحویل (ددلاین)" : "📅 تاریخ آفیش";
-          tasksDiv.innerHTML += `
-            <div class="task-item">
-              <strong>${t.title}</strong><br>
-              <small>${dLabel}: <strong>${formatShamsiLabel(t.date)}</strong></small><br>
-              <label style="margin-top:6px;">مجری:</label>
-              <select onchange="calculatedTasks[${index}].assignee = this.value">
-                ${memberOptions}
-              </select>
-              <label style="margin-top:6px;">دستمزد (تومان):</label>
-              <input type="number" value="${t.fee}" step="100000" onchange="calculatedTasks[${index}].fee = parseInt(this.value, 10)">
-            </div>
-          `;
+          
+          let html = '<div class="task-item">';
+          html += '<strong>' + t.title + '</strong><br>';
+          html += '<small>' + dLabel + ': <strong>' + formatShamsiLabel(t.date) + '</strong></small><br>';
+          html += '<label style="margin-top:6px;">مجری:</label>';
+          html += '<select onchange="calculatedTasks[' + index + '].assignee = this.value">' + memberOptions + '</select>';
+          html += '<label style="margin-top:6px;">دستمزد (تومان):</label>';
+          html += '<input type="number" value="' + t.fee + '" step="100000" onchange="calculatedTasks[' + index + '].fee = parseInt(this.value, 10)">';
+          html += '</div>';
+          tasksDiv.innerHTML += html;
         }
       });
 
@@ -1657,28 +1682,27 @@
       };
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=create_monthly_project_api`, {
+        const res = await fetch(FUNCTION_URL + "?action=create_monthly_project_api", {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify(payload)
         });
         const result = await res.json();
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
+
         if (result.success) {
-          alert(`✅ کمپین ماهانه با موفقیت ثبت شد (${result.created_count || calculatedTasks.length} تسک ایجاد گردید).`);
+          alert("✅ کمپین ماهانه با موفقیت ثبت شد (" + (result.created_count || calculatedTasks.length) + " تسک ایجاد گردید).");
           document.getElementById("brand_name").value = "";
           document.getElementById("preview-section").classList.add("hidden");
-          btn.disabled = false;
-          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
           switchNav('command');
         } else {
           alert(result.error || "خطا در ثبت کمپین ماهانه.");
-          btn.disabled = false;
-          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
         }
       } catch (err) {
-        alert("خطا در ارتباط با سرور.");
         btn.disabled = false;
         btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
+        alert("خطا در ارتباط با سرور.");
       }
     }
   </script>
