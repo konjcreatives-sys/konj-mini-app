@@ -18,6 +18,7 @@
       --success: #22c55e;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --purple: #8b5cf6;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -193,14 +194,14 @@
     }
     .filter-panel {
       background: var(--card-inner);
-      padding: 10px;
-      border-radius: 8px;
       border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
       margin-bottom: 12px;
     }
-    .filter-grid-3 {
+    .filter-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 6px;
       margin-bottom: 8px;
     }
@@ -229,7 +230,7 @@
     <p id="member-greeting" style="color: var(--muted); font-size: 0.9em;"></p>
     <div class="sub-tabs">
       <button id="sub-active-btn" class="sub-btn active" onclick="switchMemberSub('active')">⏳ تسک‌های فعال</button>
-      <button id="sub-completed-btn" class="sub-btn" onclick="switchMemberSub('completed')">🏁 تسک‌های اتمام‌یافته و بایگانی</button>
+      <button id="sub-completed-btn" class="sub-btn" onclick="switchMemberSub('completed')">🏁 تسک‌های اتمام‌یافته و آرشیو</button>
     </div>
     <div id="member-tasks-list">در حال دریافت تسک‌ها...</div>
   </div>
@@ -314,10 +315,10 @@
       <button id="cmd-completed-btn" class="sub-btn" onclick="switchCmdSub('completed')">📁 بایگانی اتمام‌یافته</button>
     </div>
 
-    <!-- فیلترهای اختصاصی اتاق فرمان -->
+    <!-- فیلترهای اتاق فرمان -->
     <div class="filter-panel">
-      <h5 style="margin:0 0 6px 0; color: #38bdf8;">🔍 فیلتر پیشرفته پروژه‌ها و تسک‌ها:</h5>
-      <div class="filter-grid-3">
+      <h5 style="margin:0 0 8px 0; color: #38bdf8;">🔍 فیلتر پروژه‌ها و تسک‌ها:</h5>
+      <div class="filter-grid">
         <div>
           <label style="margin-top:0;">👤 مجری</label>
           <select id="cmd_filter_member" onchange="applyCommandFilters()">
@@ -325,7 +326,7 @@
           </select>
         </div>
         <div>
-          <label style="margin-top:0;">🎭 تخصص</label>
+          <label style="margin-top:0;">🎬 تخصص</label>
           <select id="cmd_filter_role" onchange="applyCommandFilters()">
             <option value="">همه تخصص‌ها</option>
             <option value="filmmaker">🎥 تصویربردار</option>
@@ -333,6 +334,13 @@
             <option value="editor">🎬 تدوین‌گر</option>
             <option value="designer">🎨 طراح گرافیک</option>
             <option value="ai_artist">🤖 هنرمند AI</option>
+            <option value="admin">📱 انتشار پست</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0;">📅 سال</label>
+          <select id="cmd_filter_year" onchange="applyCommandFilters()">
+            <option value="">همه سال‌ها</option>
           </select>
         </div>
         <div>
@@ -347,7 +355,7 @@
           ♻️ پاک کردن فیلترها
         </button>
         <button onclick="fetchCommandProjects()" style="background: var(--accent); padding: 6px 10px; font-size: 0.8em; flex:1; margin-top:0;">
-          🔄 بروزرسانی لیست
+          🔄 بروزرسانی
         </button>
       </div>
     </div>
@@ -462,31 +470,38 @@
   <div id="view-calendar" class="card hidden">
     <h3>📅 تقویم کل استودیو</h3>
     <p style="color: var(--muted); font-size: 0.85em;">تمامی آفیش‌ها و تسک‌های استودیو مرتب‌شده بر اساس تاریخ شمسی:</p>
-    
-    <!-- فیلترهای اختصاصی تقویم استودیو -->
+
+    <!-- فیلترهای تقویم استودیو -->
     <div class="filter-panel">
-      <h5 style="margin:0 0 6px 0; color: #38bdf8;">🔍 فیلتر تقویم استودیو:</h5>
-      <div class="filter-grid-3">
+      <h5 style="margin:0 0 8px 0; color: #38bdf8;">🔍 فیلتر تقویم:</h5>
+      <div class="filter-grid">
         <div>
           <label style="margin-top:0;">👤 مجری</label>
-          <select id="cal_filter_member" onchange="renderStudioCalendar()">
+          <select id="cal_filter_member" onchange="applyCalendarFilters()">
             <option value="">همه مجریان</option>
           </select>
         </div>
         <div>
-          <label style="margin-top:0;">🎭 تخصص</label>
-          <select id="cal_filter_role" onchange="renderStudioCalendar()">
+          <label style="margin-top:0;">🎬 تخصص</label>
+          <select id="cal_filter_role" onchange="applyCalendarFilters()">
             <option value="">همه تخصص‌ها</option>
             <option value="filmmaker">🎥 تصویربردار</option>
             <option value="photographer">📷 عکاس</option>
             <option value="editor">🎬 تدوین‌گر</option>
             <option value="designer">🎨 طراح گرافیک</option>
             <option value="ai_artist">🤖 هنرمند AI</option>
+            <option value="admin">📱 انتشار پست</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0;">📅 سال</label>
+          <select id="cal_filter_year" onchange="applyCalendarFilters()">
+            <option value="">همه سال‌ها</option>
           </select>
         </div>
         <div>
           <label style="margin-top:0;">🗓 ماه</label>
-          <select id="cal_filter_month" onchange="renderStudioCalendar()">
+          <select id="cal_filter_month" onchange="applyCalendarFilters()">
             <option value="">همه ماه‌ها</option>
           </select>
         </div>
@@ -573,6 +588,8 @@
     let rawAllTasks = [];
     let expandedProjects = {};
 
+    let currentCmdSub = 'active';
+
     const SHAMSI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
     const POST_PRODUCTION_ROLES = ["editor", "designer", "ai_artist"];
     const STATUS_MAP = {
@@ -581,7 +598,7 @@
       'PENDING_ADMIN_REVIEW': '🔍 منتظر بررسی مدیریت',
       'PENDING_ACCEPTANCE': '📩 منتظر تایید اولیه مجری',
       'UNASSIGNED': '⬜️ بدون مجری',
-      'CANCELLED': '❌ لغو / کنسل‌شده'
+      'CANCELLED': '❌ کنسل‌شده'
     };
 
     function gregorianToJalali(gy, gm, gd) {
@@ -673,9 +690,6 @@
     }
 
     async function submitCascadeReferral() {
-      const btn = document.getElementById("cas_submit_btn");
-      if (btn.disabled) return;
-
       const parentTaskId = document.getElementById("cas_parent_task_id").value;
       const projectId = document.getElementById("cas_project_id").value;
       const clientName = document.getElementById("cas_client_name").value;
@@ -690,6 +704,7 @@
       const deadlineShamsi = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
       const time = document.getElementById("cas_time").value;
 
+      const btn = document.getElementById("cas_submit_btn");
       btn.disabled = true;
       btn.innerText = "در حال ایجاد و ارسال...";
 
@@ -716,13 +731,16 @@
         if (result.success) {
           alert(`✅ تعداد ${result.created_count} تسک جدید برای «${result.assignee_name || 'مجری'}» با موفقیت ثبت شد و پیشنهاد کار در تلگرام برای او ارسال گردید.`);
           closeCascadeModal();
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
           await fetchCommandProjects();
         } else {
           alert(result.error || "خطا در ارجاع تسک.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
         }
       } catch (e) {
         alert("خطا در ارتباط با سرور.");
-      } finally {
         btn.disabled = false;
         btn.innerText = "🚀 ثبت تسک‌ها و ارسال پیشنهاد به تدوین‌گر";
       }
@@ -765,9 +783,10 @@
     }
 
     function switchCmdSub(sub) {
+      currentCmdSub = sub;
       document.getElementById("cmd-active-btn").classList.toggle("active", sub === 'active');
       document.getElementById("cmd-completed-btn").classList.toggle("active", sub === 'completed');
-      applyCommandFilters();
+      renderCommandProjects(sub);
     }
 
     function switchTab(tab) {
@@ -787,13 +806,13 @@
     document.addEventListener("DOMContentLoaded", async () => {
       const isAdmin = currentUserId === ADMIN_ID || String(currentUserId) === "83013720" || location.search.includes("admin=1");
 
-      populateShamsiDropdowns("single");
-      populateShamsiDropdowns("monthly");
-      populateMonthDropdowns();
-      updateSingleDateLabel();
-
       if (isAdmin) {
         document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
+        populateShamsiDropdowns("single");
+        populateShamsiDropdowns("monthly");
+        populateAccountingMonthDropdown();
+        populateFilterDropdowns();
+        updateSingleDateLabel();
         await fetchMembers();
       } else {
         const uName = currentUser?.first_name || '';
@@ -804,15 +823,37 @@
       switchNav('workspace');
     });
 
-    function populateMonthDropdowns() {
-      const monthSelects = ["acc_filter_month", "cmd_filter_month", "cal_filter_month"];
-      monthSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerHTML = '<option value="">همه ماه‌ها</option>';
+    function populateFilterDropdowns() {
+      const populateMonths = (selectId) => {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">همه ماه‌ها</option>';
         SHAMSI_MONTHS.forEach((mName, idx) => {
-          el.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
+          sel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
         });
+      };
+
+      const populateYears = (selectId) => {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">همه سال‌ها</option>';
+        [1403, 1404, 1405, 1406, 1407].forEach(y => {
+          sel.innerHTML += `<option value="${y}">${y}</option>`;
+        });
+      };
+
+      populateMonths("cmd_filter_month");
+      populateYears("cmd_filter_year");
+      populateMonths("cal_filter_month");
+      populateYears("cal_filter_year");
+    }
+
+    function populateAccountingMonthDropdown() {
+      const mSel = document.getElementById("acc_filter_month");
+      if (!mSel) return;
+      mSel.innerHTML = '<option value="">همه ماه‌ها</option>';
+      SHAMSI_MONTHS.forEach((mName, idx) => {
+        mSel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
       });
     }
 
@@ -832,17 +873,13 @@
         monthSel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
       });
 
-      const today = getTodayShamsi();
-      const years = [1403, 1404, 1405, 1406, 1407];
-      if (!years.includes(today.year)) years.push(today.year);
-      years.sort();
-
       yearSel.innerHTML = "";
-      years.forEach(y => {
+      [1403, 1404, 1405, 1406, 1407].forEach(y => {
         yearSel.innerHTML += `<option value="${y}">${y}</option>`;
       });
 
-      // تنظیم پیش‌فرض به تاریخ واقعی روز جاری
+      // تنظیم تاریخ پیش‌فرض به تاریخ واقعی همان روز شمسی
+      const today = getTodayShamsi();
       daySel.value = today.day;
       monthSel.value = today.month;
       yearSel.value = today.year;
@@ -923,29 +960,32 @@
         const data = await res.json();
         activeMembers = data.members || [];
         
-        const singleAssignee = document.getElementById("single_assignee");
-        if (singleAssignee) {
-          singleAssignee.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
+        const select = document.getElementById("single_assignee");
+        if (select) {
+          select.innerHTML = '<option value="">🔍 تخصیص بعداً توسط مدیر</option>';
           activeMembers.forEach(m => {
-            singleAssignee.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
+            select.innerHTML += `<option value="${m.chat_id}">${m.name} (${m.chat_id})</option>`;
           });
         }
 
-        const memberSelects = ["acc_filter_member", "acc_pay_member", "cmd_filter_member", "cal_filter_member"];
-        memberSelects.forEach(id => {
-          const el = document.getElementById(id);
-          if (!el) return;
-          const defaultLabel = id === "acc_pay_member" ? "انتخاب مجری جهت پرداخت" : "همه مجریان";
-          el.innerHTML = `<option value="">${defaultLabel}</option>`;
+        const populateMemberSelect = (selectId, defaultLabel) => {
+          const sel = document.getElementById(selectId);
+          if (!sel) return;
+          sel.innerHTML = `<option value="">${defaultLabel}</option>`;
           const hasAdmin = activeMembers.some(m => Number(m.chat_id) === ADMIN_ID);
           if (!hasAdmin) {
-            el.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
+            sel.innerHTML += `<option value="${ADMIN_ID}">رامبد رحیمی (مدیر)</option>`;
           }
           activeMembers.forEach(m => {
             const displayName = Number(m.chat_id) === ADMIN_ID ? 'رامبد رحیمی (مدیر)' : m.name;
-            el.innerHTML += `<option value="${m.chat_id}">${displayName}</option>`;
+            sel.innerHTML += `<option value="${m.chat_id}">${displayName}</option>`;
           });
-        });
+        };
+
+        populateMemberSelect("acc_filter_member", "همه مجریان");
+        populateMemberSelect("acc_pay_member", "انتخاب مجری جهت پرداخت");
+        populateMemberSelect("cmd_filter_member", "همه مجریان");
+        populateMemberSelect("cal_filter_member", "همه مجریان");
 
         document.getElementById("status-bar").innerHTML = `<span class="status-ok">✅ سیستم آنلاین (${activeMembers.length} عضو فعال)</span>`;
       } catch (err) {
@@ -963,8 +1003,7 @@
         });
         const data = await res.json();
         rawUserTasks = data.tasks || [];
-        const activeSub = document.getElementById("sub-active-btn").classList.contains("active") ? 'active' : 'completed';
-        renderMemberTasks(activeSub);
+        renderMemberTasks('active');
       } catch (err) {
         container.innerHTML = `<div style="text-align:center; padding:10px;">در حال حاضر هیچ تسکی یافت نشد.<br><button onclick="fetchMemberTasks()" style="margin-top:8px; padding:6px; font-size:0.8em; background:#334155;">🔄 تلاش مجدد</button></div>`;
       }
@@ -977,7 +1016,7 @@
         return;
       }
 
-      // رفع باگ ۱: تسک‌های فعال فقط شامل وضعیت‌های در حال انجام هستند و Cancelled به بخش بایگانی می‌رود
+      // اصلاح فیلتر کارتابل: تسک‌های CANCELLED و COMPLETED در بخش آرشیو قرار می‌گیرند و از بخش فعال حذف می‌شوند
       const filtered = rawUserTasks.filter(t => {
         if (filterType === 'completed') {
           return t.status === 'COMPLETED' || t.status === 'CANCELLED';
@@ -987,7 +1026,7 @@
       });
 
       if (filtered.length === 0) {
-        container.innerText = filterType === 'completed' ? "هیچ تسک اتمام‌یافته یا بایگانی‌شده‌ای وجود ندارد." : "هیچ تسک فعالی ندارید.";
+        container.innerText = filterType === 'completed' ? "هیچ تسک اتمام‌یافته یا آرشیو‌شده‌ای در سوابق شما وجود ندارد." : "هیچ تسک فعالی ندارید.";
         return;
       }
 
@@ -996,11 +1035,19 @@
         const isCancelled = t.status === 'CANCELLED';
         const isPendingReview = t.status === 'PENDING_ADMIN_REVIEW';
         const statusText = STATUS_MAP[t.status] || t.status;
-        const cardClass = isCompleted ? 'task-completed' : (isCancelled ? 'task-cancelled' : '');
-        const statusColor = isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)');
+        
+        let itemClass = "task-item";
+        let statusColor = "var(--accent)";
+        if (isCompleted) {
+          itemClass += " task-completed";
+          statusColor = "var(--success)";
+        } else if (isCancelled) {
+          itemClass += " task-cancelled";
+          statusColor = "var(--danger)";
+        }
 
         return `
-          <div class="task-item ${cardClass}">
+          <div class="${itemClass}">
             <strong>${t.title}</strong><br>
             <small>📅 تاریخ/ددلاین: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
             <small style="color: ${statusColor}; font-weight: bold;">وضعیت: ${statusText}</small>
@@ -1042,7 +1089,7 @@
         });
         const data = await res.json();
         rawAllProjects = data.projects || [];
-        applyCommandFilters();
+        renderCommandProjects(currentCmdSub);
         await populateRemindTasksDropdown();
       } catch (err) {
         container.innerText = "خطا در دریافت لیست پروژه‌ها.";
@@ -1050,53 +1097,15 @@
     }
 
     function applyCommandFilters() {
-      const sub = document.getElementById("cmd-active-btn").classList.contains("active") ? 'active' : 'completed';
-      renderCommandProjects(sub);
+      renderCommandProjects(currentCmdSub);
     }
 
     function resetCommandFilters() {
       document.getElementById("cmd_filter_member").value = "";
       document.getElementById("cmd_filter_role").value = "";
+      document.getElementById("cmd_filter_year").value = "";
       document.getElementById("cmd_filter_month").value = "";
-      applyCommandFilters();
-    }
-
-    async function populateRemindTasksDropdown() {
-      const sel = document.getElementById("remind_task_id");
-      if (!sel) return;
-      try {
-        const res = await fetch(`${FUNCTION_URL}?action=get_all_tasks`, {
-          headers: getHeaders()
-        });
-        const data = await res.json();
-        const activeTasks = (data.tasks || []).filter(t => t.status === 'ACCEPTED' || t.status === 'PENDING_ACCEPTANCE');
-        sel.innerHTML = '<option value="">انتخاب تسک برای پیگیری</option>';
-        activeTasks.forEach(t => {
-          sel.innerHTML += `<option value="${t.id}">${t.title} (${t.assignee_name || 'مجری'})</option>`;
-        });
-      } catch (e) {}
-    }
-
-    async function sendTaskStatusReminderFromCmd() {
-      const taskId = document.getElementById("remind_task_id").value;
-      if (!taskId) {
-        alert("لطفاً ابتدا یک تسک فعال را انتخاب فرمایید.");
-        return;
-      }
-      try {
-        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${taskId}&admin_id=${ADMIN_ID}`, {
-          method: 'POST',
-          headers: getHeaders()
-        });
-        const result = await res.json();
-        if (result.success) {
-          alert("درخواست پیگیری وضعیت تسک به مجری مربوطه در تلگرام ارسال شد.");
-        } else {
-          alert(result.error || "خطا در ارسال درخواست پیگیری.");
-        }
-      } catch (e) {
-        alert("خطا در ارتباط با سرور.");
-      }
+      renderCommandProjects(currentCmdSub);
     }
 
     function renderCommandProjects(filterType) {
@@ -1106,25 +1115,27 @@
         return;
       }
 
-      const fMember = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
-      const fRole = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
-      const fMonth = document.getElementById("cmd_filter_month") ? document.getElementById("cmd_filter_month").value : "";
+      const memberFilter = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
+      const roleFilter = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
+      const yearFilter = document.getElementById("cmd_filter_year") ? document.getElementById("cmd_filter_year").value : "";
+      const monthFilter = document.getElementById("cmd_filter_month") ? document.getElementById("cmd_filter_month").value : "";
 
-      const filtered = rawAllProjects.filter(p => {
-        const statusMatch = filterType === 'completed' ? p.status === 'COMPLETED' : p.status !== 'COMPLETED';
-        if (!statusMatch) return false;
+      let filtered = rawAllProjects.filter(p => filterType === 'completed' ? p.status === 'COMPLETED' : p.status !== 'COMPLETED');
 
-        if (fMonth && p.deadline) {
+      if (yearFilter || monthFilter) {
+        filtered = filtered.filter(p => {
+          if (!p.deadline || !p.deadline.includes('/')) return true;
           const parts = p.deadline.split('/');
-          if (parts.length >= 2 && parseInt(parts[1], 10) !== parseInt(fMonth, 10)) {
-            return false;
-          }
-        }
-        return true;
-      });
+          const pYear = parts[0];
+          const pMonth = String(parseInt(parts[1], 10));
+          if (yearFilter && pYear !== String(yearFilter)) return false;
+          if (monthFilter && pMonth !== String(monthFilter)) return false;
+          return true;
+        });
+      }
 
       if (filtered.length === 0) {
-        container.innerText = filterType === 'completed' ? "هیچ پروژه اتمام‌یافته‌ای با این فیلترها وجود ندارد." : "هیچ پروژه فعالی با این فیلترها وجود ندارد.";
+        container.innerText = filterType === 'completed' ? "هیچ پروژه اتمام‌یافته‌ای با فیلترهای انتخابی در بایگانی وجود ندارد." : "هیچ پروژه فعالی با فیلترهای انتخابی وجود ندارد.";
         return;
       }
 
@@ -1179,8 +1190,10 @@
       const subbox = document.getElementById(`project-tasks-box-${projectId}`);
       if (!subbox) return;
 
-      const fMember = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
-      const fRole = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
+      const memberFilter = document.getElementById("cmd_filter_member") ? document.getElementById("cmd_filter_member").value : "";
+      const roleFilter = document.getElementById("cmd_filter_role") ? document.getElementById("cmd_filter_role").value : "";
+      const yearFilter = document.getElementById("cmd_filter_year") ? document.getElementById("cmd_filter_year").value : "";
+      const monthFilter = document.getElementById("cmd_filter_month") ? document.getElementById("cmd_filter_month").value : "";
 
       try {
         const res = await fetch(`${FUNCTION_URL}?action=get_project_tasks_api&project_id=${projectId}`, {
@@ -1188,19 +1201,29 @@
         });
         const data = await res.json();
         let tasks = data.tasks || [];
-
-        if (fMember) {
-          tasks = tasks.filter(t => String(t.assigned_to_id) === String(fMember));
+        
+        if (memberFilter) {
+          tasks = tasks.filter(t => String(t.assigned_to_id) === String(memberFilter));
         }
-        if (fRole) {
-          tasks = tasks.filter(t => t.role_required === fRole);
+        if (roleFilter) {
+          tasks = tasks.filter(t => String(t.role_required) === String(roleFilter));
+        }
+        if (yearFilter || monthFilter) {
+          tasks = tasks.filter(t => {
+            if (!t.scheduled_date || !t.scheduled_date.includes('/')) return true;
+            const parts = t.scheduled_date.split('/');
+            const tYear = parts[0];
+            const tMonth = String(parseInt(parts[1], 10));
+            if (yearFilter && tYear !== String(yearFilter)) return false;
+            if (monthFilter && tMonth !== String(monthFilter)) return false;
+            return true;
+          });
         }
 
         if (tasks.length === 0) {
-          subbox.innerText = "هیچ تسکی با این فیلتر برای این پروژه یافت نشد.";
+          subbox.innerText = "هیچ تسکی با فیلترهای انتخابی برای این پروژه یافت نشد.";
           return;
         }
-
         let html = `<h5>📋 تسک‌های این پروژه:</h5>`;
         tasks.forEach(t => {
           const assigneeName = t.members?.name || 'تخصیص‌نیافته';
@@ -1213,7 +1236,7 @@
               <small>وضعیت: <strong>${statusLabel}</strong></small>
               
               <div class="btn-action-row" style="flex-wrap: wrap;">
-                <button onclick="openCascadeModal('${t.id}', '${projectId}', '${t.title.replace(/'/g, "\\'")}')" style="background: #8b5cf6; font-weight: bold; flex: 1 1 100%; margin-bottom: 4px;">🎬 ارجاع این آفیش به تدوین‌گر</button>
+                <button onclick="openCascadeModal('${t.id}', '${projectId}', '${t.title.replace(/'/g, "\'")}')" style="background: #8b5cf6; font-weight: bold; flex: 1 1 100%; margin-bottom: 4px;">🎬 ارجاع این آفیش به تدوین‌گر</button>
                 <button onclick="editTaskFee('${t.id}', '${t.fixed_fee || 0}')" style="background: #334155;">💰 دستمزد</button>
                 <button onclick="editTaskAssignee('${t.id}')" style="background: #334155;">👤 مجری</button>
                 <button onclick="toggleTaskStatus('${t.id}', '${projectId}')" style="background: #334155;">🏁 وضعیت</button>
@@ -1225,6 +1248,44 @@
         subbox.innerHTML = html;
       } catch (e) {
         subbox.innerText = "خطا در دریافت تسک‌ها.";
+      }
+    }
+
+    async function populateRemindTasksDropdown() {
+      const sel = document.getElementById("remind_task_id");
+      if (!sel) return;
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_all_tasks`, {
+          headers: getHeaders()
+        });
+        const data = await res.json();
+        const activeTasks = (data.tasks || []).filter(t => t.status === 'ACCEPTED' || t.status === 'PENDING_ACCEPTANCE');
+        sel.innerHTML = '<option value="">انتخاب تسک برای پیگیری</option>';
+        activeTasks.forEach(t => {
+          sel.innerHTML += `<option value="${t.id}">${t.title} (${t.assignee_name || 'مجری'})</option>`;
+        });
+      } catch (e) {}
+    }
+
+    async function sendTaskStatusReminderFromCmd() {
+      const taskId = document.getElementById("remind_task_id").value;
+      if (!taskId) {
+        alert("لطفاً ابتدا یک تسک فعال را انتخاب فرمایید.");
+        return;
+      }
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=send_task_status_reminder_api&task_id=${taskId}&admin_id=${ADMIN_ID}`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("درخواست پیگیری وضعیت تسک به مجری مربوطه در تلگرام ارسال شد.");
+        } else {
+          alert(result.error || "خطا در ارسال درخواست پیگیری.");
+        }
+      } catch (e) {
+        alert("خطا در ارتباط با سرور.");
       }
     }
 
@@ -1247,8 +1308,11 @@
         alert("هیچ عضو فعالی یافت نشد.");
         return;
       }
-      let options = activeMembers.map((m, i) => `${i + 1}. ${m.name} (${m.chat_id})`).join("\n");
-      const choiceStr = prompt(`لطفاً شماره مجری جدید را انتخاب کنید:\n\n${options}`);
+      let options = activeMembers.map((m, i) => `${i + 1}. ${m.name} (${m.chat_id})`).join("
+");
+      const choiceStr = prompt(`لطفاً شماره مجری جدید را انتخاب کنید:
+
+${options}`);
       if (choiceStr) {
         const choiceIdx = parseInt(choiceStr, 10) - 1;
         if (!isNaN(choiceIdx) && activeMembers[choiceIdx]) {
@@ -1317,6 +1381,18 @@
       }
     }
 
+    function applyCalendarFilters() {
+      renderStudioCalendar();
+    }
+
+    function resetCalendarFilters() {
+      document.getElementById("cal_filter_member").value = "";
+      document.getElementById("cal_filter_role").value = "";
+      document.getElementById("cal_filter_year").value = "";
+      document.getElementById("cal_filter_month").value = "";
+      renderStudioCalendar();
+    }
+
     function renderStudioCalendar() {
       const container = document.getElementById("studio-calendar-list");
       if (!rawAllTasks || rawAllTasks.length === 0) {
@@ -1324,24 +1400,33 @@
         return;
       }
 
-      const fMember = document.getElementById("cal_filter_member") ? document.getElementById("cal_filter_member").value : "";
-      const fRole = document.getElementById("cal_filter_role") ? document.getElementById("cal_filter_role").value : "";
-      const fMonth = document.getElementById("cal_filter_month") ? document.getElementById("cal_filter_month").value : "";
+      const memberFilter = document.getElementById("cal_filter_member") ? document.getElementById("cal_filter_member").value : "";
+      const roleFilter = document.getElementById("cal_filter_role") ? document.getElementById("cal_filter_role").value : "";
+      const yearFilter = document.getElementById("cal_filter_year") ? document.getElementById("cal_filter_year").value : "";
+      const monthFilter = document.getElementById("cal_filter_month") ? document.getElementById("cal_filter_month").value : "";
 
-      const filtered = rawAllTasks.filter(t => {
-        if (fMember && String(t.assigned_to_id) !== String(fMember)) return false;
-        if (fRole && t.role_required !== fRole) return false;
-        if (fMonth && t.scheduled_date) {
+      let filtered = [...rawAllTasks];
+
+      if (memberFilter) {
+        filtered = filtered.filter(t => String(t.assigned_to_id) === String(memberFilter));
+      }
+      if (roleFilter) {
+        filtered = filtered.filter(t => String(t.role_required) === String(roleFilter));
+      }
+      if (yearFilter || monthFilter) {
+        filtered = filtered.filter(t => {
+          if (!t.scheduled_date || !t.scheduled_date.includes('/')) return true;
           const parts = t.scheduled_date.split('/');
-          if (parts.length >= 2 && parseInt(parts[1], 10) !== parseInt(fMonth, 10)) {
-            return false;
-          }
-        }
-        return true;
-      });
+          const tYear = parts[0];
+          const tMonth = String(parseInt(parts[1], 10));
+          if (yearFilter && tYear !== String(yearFilter)) return false;
+          if (monthFilter && tMonth !== String(monthFilter)) return false;
+          return true;
+        });
+      }
 
       if (filtered.length === 0) {
-        container.innerText = "هیچ رویدادی با فیلترهای انتخابی در تقویم یافت نشد.";
+        container.innerText = "هیچ تسکی با فیلترهای انتخابی در تقویم یافت نشد.";
         return;
       }
 
@@ -1352,11 +1437,19 @@
         const dLabel = isPostProd ? "ددلاین" : "تاریخ";
         const statusText = STATUS_MAP[t.status] || t.status;
         const assigneeName = t.assignee_name || (t.members && t.members.name) || 'تخصیص‌نیافته';
-        const cardClass = isCompleted ? 'task-completed' : (isCancelled ? 'task-cancelled' : '');
-        const statusColor = isCompleted ? 'var(--success)' : (isCancelled ? 'var(--danger)' : 'var(--accent)');
+        
+        let itemClass = "task-item";
+        let statusColor = "var(--accent)";
+        if (isCompleted) {
+          itemClass += " task-completed";
+          statusColor = "var(--success)";
+        } else if (isCancelled) {
+          itemClass += " task-cancelled";
+          statusColor = "var(--danger)";
+        }
 
         return `
-          <div class="task-item ${cardClass}">
+          <div class="${itemClass}">
             <strong>${idx + 1}. ${t.title}</strong><br>
             <small>📅 ${dLabel}: <strong>${formatShamsiLabel(t.scheduled_date)}</strong> | ⏰ ساعت: ${t.scheduled_time || '14:00'}</small><br>
             <small>👤 مجری: <strong>${assigneeName}</strong></small><br>
@@ -1364,13 +1457,6 @@
           </div>
         `;
       }).join("");
-    }
-
-    function resetCalendarFilters() {
-      document.getElementById("cal_filter_member").value = "";
-      document.getElementById("cal_filter_role").value = "";
-      document.getElementById("cal_filter_month").value = "";
-      renderStudioCalendar();
     }
 
     async function fetchAccountingData() {
@@ -1489,9 +1575,6 @@
     }
 
     async function submitSingleProject() {
-      const btn = document.getElementById("single-submit-btn");
-      if (btn.disabled) return;
-
       const brand = document.getElementById("single_brand").value.trim();
       const title = document.getElementById("single_title").value.trim();
       const sDay = document.getElementById("single_shamsi_day").value;
@@ -1509,6 +1592,7 @@
         return;
       }
 
+      const btn = document.getElementById("single-submit-btn");
       btn.disabled = true;
       btn.innerText = "در حال ثبت...";
 
@@ -1537,13 +1621,16 @@
           document.getElementById("single_brand").value = "";
           document.getElementById("single_title").value = "";
           document.getElementById("single_location").value = "";
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
           switchNav('command');
         } else {
           alert(result.error || "خطا در ثبت پروژه تکی.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی پروژه تکی";
         }
       } catch (err) {
         alert("خطا در ارتباط با سرور.");
-      } finally {
         btn.disabled = false;
         btn.innerText = "🚀 ثبت نهایی پروژه تکی";
       }
@@ -1661,16 +1748,8 @@
     }
 
     async function submitProject() {
-      const btn = document.getElementById("submit-btn");
-      if (btn.disabled) return;
-
       const brand = document.getElementById("brand_name").value.trim();
-
-      if (!brand) {
-        alert("لطفاً نام برند را وارد کنید.");
-        return;
-      }
-
+      const btn = document.getElementById("submit-btn");
       btn.disabled = true;
       btn.innerText = "در حال ثبت...";
 
@@ -1692,13 +1771,16 @@
           alert(`✅ کمپین ماهانه با موفقیت ثبت شد (${result.created_count || calculatedTasks.length} تسک ایجاد گردید).`);
           document.getElementById("brand_name").value = "";
           document.getElementById("preview-section").classList.add("hidden");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
           switchNav('command');
         } else {
           alert(result.error || "خطا در ثبت کمپین ماهانه.");
+          btn.disabled = false;
+          btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
         }
       } catch (err) {
         alert("خطا در ارتباط با سرور.");
-      } finally {
         btn.disabled = false;
         btn.innerText = "🚀 ثبت نهایی کمپین ماهانه";
       }
