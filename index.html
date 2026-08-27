@@ -11,7 +11,7 @@
       --card: #1e293b;
       --card-inner: #0f172a;
       --accent: #3b82f6;
-      --accent-hover: #2563eb;
+      --accent-hover: #2563eb;https://docs.google.com/document/d/1UHO7z5gynG3d0IP9lBJf51tmkPF_ixoeHXxYYQb00vY/edit?usp=drivesdk
       --text: #f8fafc;
       --muted: #94a3b8;
       --border: #334155;
@@ -445,9 +445,18 @@
       <select id="acc_pay_member" onchange="loadAccountingPaymentTasks()"></select>
 
       <label>📌 Task مربوط به پرداخت</label>
-      <select id="acc_pay_task">
+      <select id="acc_pay_task" onchange="toggleGeneralPaymentPeriod()">
         <option value="">💳 تسویه کلی حساب مجری (بدون تسک خاص)</option>
       </select>
+
+      <!-- انتخاب دوره برای تسویه کلی -->
+      <div id="acc_general_period_box" style="margin-top: 8px;">
+        <label style="margin-top:0; color: #38bdf8;">🗓 دوره (ماه و سال) مربوط به این تسویه کلی:</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+          <select id="acc_pay_year"></select>
+          <select id="acc_pay_month"></select>
+        </div>
+      </div>
 
       <label>مبلغ پرداختی به تومان</label>
       <input type="number" id="acc_pay_amount" placeholder="مثلاً: 1200000">
@@ -808,6 +817,8 @@
         populateShamsiDropdowns("single");
         populateShamsiDropdowns("monthly");
         populateAccountingMonthDropdown();
+        populatePaymentPeriodDropdowns();
+        toggleGeneralPaymentPeriod();
         populateCommandFilters();
         populateCalendarFilters();
         updateSingleDateLabel();
@@ -928,8 +939,8 @@
         const parts = shamsiStr.split('/');
         if (parts.length === 3) {
           const y = parts[0];
-          const m = parseInt(parts, 10);
-          const d = parseInt(parts, 10);
+          const m = parseInt(parts[1], 10);
+          const d = parseInt(parts[2], 10);
           if (!isNaN(m) && m >= 1 && m <= 12) {
             return `${d} ${SHAMSI_MONTHS[m - 1]} ${y}`;
           }
@@ -1214,7 +1225,7 @@
               const parts = (t.scheduled_date || "").split('/');
               if (parts.length === 3) {
                 if (selYear && String(parts[0]) !== String(selYear)) return false;
-                if (selMonth && parseInt(parts, 10) !== parseInt(selMonth, 10)) return false;
+                if (selMonth && parseInt(parts[1], 10) !== parseInt(selMonth, 10)) return false;
               } else {
                 return false;
               }
@@ -1310,7 +1321,7 @@
               const parts = (t.scheduled_date || "").split('/');
               if (parts.length === 3) {
                 if (selYear && String(parts[0]) !== String(selYear)) return false;
-                if (selMonth && parseInt(parts, 10) !== parseInt(selMonth, 10)) return false;
+                if (selMonth && parseInt(parts[1], 10) !== parseInt(selMonth, 10)) return false;
               } else {
                 return false;
               }
@@ -1473,7 +1484,7 @@
           const parts = (t.scheduled_date || "").split('/');
           if (parts.length === 3) {
             if (selYear && String(parts[0]) !== String(selYear)) return false;
-            if (selMonth && parseInt(parts, 10) !== parseInt(selMonth, 10)) return false;
+            if (selMonth && parseInt(parts[1], 10) !== parseInt(selMonth, 10)) return false;
           } else {
             return false;
           }
@@ -1575,10 +1586,40 @@
       fetchAccountingData();
     }
 
+    function toggleGeneralPaymentPeriod() {
+      const taskSel = document.getElementById("acc_pay_task");
+      const box = document.getElementById("acc_general_period_box");
+      if (box && taskSel) {
+        if (!taskSel.value) {
+          box.classList.remove("hidden");
+        } else {
+          box.classList.add("hidden");
+        }
+      }
+    }
+
+    function populatePaymentPeriodDropdowns() {
+      const ySel = document.getElementById("acc_pay_year");
+      const mSel = document.getElementById("acc_pay_month");
+      if (!ySel || !mSel) return;
+      const today = getTodayShamsi();
+      
+      ySel.innerHTML = "";
+      [1402, 1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
+        ySel.innerHTML += `<option value="${y}" ${y === today.year ? 'selected' : ''}>${y}</option>`;
+      });
+
+      mSel.innerHTML = "";
+      SHAMSI_MONTHS.forEach((mName, idx) => {
+        mSel.innerHTML += `<option value="${idx + 1}" ${idx + 1 === today.month ? 'selected' : ''}>${mName}</option>`;
+      });
+    }
+
     async function loadAccountingPaymentTasks() {
       const memberId = document.getElementById("acc_pay_member").value;
       const taskSel = document.getElementById("acc_pay_task");
       taskSel.innerHTML = '<option value="">💳 تسویه کلی حساب مجری (بدون تسک خاص)</option>';
+      toggleGeneralPaymentPeriod();
       if (!memberId) return;
 
       try {
@@ -1603,8 +1644,16 @@
         return;
       }
 
+      const periodYear = document.getElementById("acc_pay_year") ? document.getElementById("acc_pay_year").value : "";
+      const periodMonth = document.getElementById("acc_pay_month") ? document.getElementById("acc_pay_month").value : "";
+
+      let payUrl = `${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId || '')}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`;
+      if (!taskId && periodYear && periodMonth) {
+        payUrl += `&period_year=${encodeURIComponent(periodYear)}&period_month=${encodeURIComponent(periodMonth)}`;
+      }
+
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=record_payment_api&admin_id=${ADMIN_ID}&member_id=${memberId}&task_id=${encodeURIComponent(taskId || '')}&amount=${amount}&desc=${encodeURIComponent(desc || 'تسویه حساب')}`, {
+        const res = await fetch(payUrl, {
           method: 'POST',
           headers: getHeaders()
         });
