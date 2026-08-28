@@ -235,6 +235,7 @@
       font-size: 0.84em;
       color: #cbd5e1;
       margin-bottom: 8px;
+      line-height: 1.6;
     }
     .acc-stat-pills {
       display: grid;
@@ -437,7 +438,7 @@
   <div id="view-accounting" class="card hidden">
     <h3>💰 حسابداری تفصیلی</h3>
     <p style="color: var(--muted); font-size: 0.85em; margin-bottom: 12px;">
-      حساب هر مجری را بر اساس ماه و Task مشاهده کنید. بدهی نهایی فقط از Taskهایی می‌آید که مدیر آن‌ها را تایید کرده است.
+      حساب هر مجری را بر اساس ماه و Task مشاهده کنید. بدهی نهایی بر اساس دوره اتمام و تایید پروژه در حسابرسی قرار می‌گیرد.
     </p>
 
     <!-- فیلترها -->
@@ -952,7 +953,6 @@
         yearSel.innerHTML += `<option value="${y}">${y}</option>`;
       });
 
-      // تنظیم پیش‌فرض به تاریخ روز واقعی
       daySel.value = currentShamsi.day;
       monthSel.value = currentShamsi.month;
       yearSel.value = currentShamsi.year;
@@ -1105,7 +1105,6 @@
       }
     }
 
-    // اصلاح باگ شماره ۱: حذف تسک‌های CANCELLED از تب فعال و انتقال به بایگانی
     function renderMemberTasks(filterType) {
       const container = document.getElementById("member-tasks-list");
       if (!rawUserTasks || rawUserTasks.length === 0) {
@@ -1183,7 +1182,6 @@
         rawAllProjects = projData.projects || [];
         rawAllTasks = tasksData.tasks || [];
 
-        // رفع کامل باگ ۱: اگر تسکی وجود دارد که project_id ندارد، آن را در یک گروه پروژه‌ای نمایش می‌دهیم
         const orphanTasks = rawAllTasks.filter(t => !t.project_id);
         if (orphanTasks.length > 0) {
           const hasOrphanGroup = rawAllProjects.some(p => p.id === 'orphan_group');
@@ -1247,7 +1245,6 @@
       renderCommandProjects(currentCmdSub);
     }
 
-    // رندر اتاق فرمان به همراه فیلترهای سه‌گانه مجری، تخصص و تاریخ
     function renderCommandProjects(filterType) {
       currentCmdSub = filterType;
       const container = document.getElementById("command-projects-list");
@@ -1263,7 +1260,6 @@
 
       let filteredProjects = rawAllProjects.filter(p => filterType === 'completed' ? p.status === 'COMPLETED' : p.status !== 'COMPLETED');
 
-      // اعمال فیلتر هوشمند بر اساس تسک‌های متصل به پروژه
       if (selMember || selRole || selMonth || selYear) {
         filteredProjects = filteredProjects.filter(p => {
           let pTasks = [];
@@ -1367,7 +1363,6 @@
         const selMonth = document.getElementById("cmd_filter_month") ? document.getElementById("cmd_filter_month").value : "";
         const selYear = document.getElementById("cmd_filter_year") ? document.getElementById("cmd_filter_year").value : "";
 
-        // فیلتر تسک‌های داخل جعبه
         if (selMember || selRole || selMonth || selYear) {
           tasks = tasks.filter(t => {
             if (selMember && String(t.assigned_to_id) !== String(selMember)) return false;
@@ -1417,7 +1412,6 @@
       }
     }
 
-    // اصلاح باگ شماره ۲: ویرایش دستمزد و اعمال فوری در بدهی تاییدشده و دیتابیس
     async function editTaskFee(taskId, currentFee, projectId) {
       const newFeeStr = prompt("لطفاً دستمزد جدید تسک را به تومان وارد کنید:", currentFee);
       if (newFeeStr !== null) {
@@ -1519,7 +1513,6 @@
       renderStudioCalendar();
     }
 
-    // رندر تقویم کل استودیو به همراه فیلترهای مجری، تخصص و تاریخ
     function renderStudioCalendar() {
       const container = document.getElementById("studio-calendar-list");
       if (!rawAllTasks || rawAllTasks.length === 0) {
@@ -1614,7 +1607,9 @@
               <div class="acc-task-card ${hasRemaining ? 'has-remaining' : 'is-settled'}">
                 <div class="acc-task-title">📌 ${r.title}</div>
                 <div class="acc-task-meta">
-                  👤 مجری: <strong style="color:#fff;">${r.member_name}</strong> | 📅 تاریخ: <strong style="color:#fff;">${formatShamsiLabel(r.scheduled_date)}</strong>
+                  👤 مجری: <strong style="color:#fff;">${r.member_name}</strong><br>
+                  📅 تاریخ ثبت/آفیش: <strong style="color:#94a3b8;">${formatShamsiLabel(r.scheduled_date)}</strong>
+                  ${r.approved_shamsi_date ? ` | 🏁 تاریخ اتمام و تایید: <strong style="color:#22c55e;">${formatShamsiLabel(r.approved_shamsi_date)}</strong>` : ' | ⏳ وضعیت: <strong style="color:#38bdf8;">در حال انجام</strong>'}
                 </div>
                 <div class="acc-stat-pills">
                   <div>
