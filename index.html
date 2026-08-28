@@ -1,3 +1,14 @@
+
+Version history
+All versions
+Thursday
+27 August, 16:10
+Current version
+Konj Company
+Imported .html file
+
+Highlight changes
+Turn on screen reader supportTo enable screen reader support, press Ctrl+Alt+Z To learn about keyboard shortcuts, press Ctrl+slashBanner hidden 
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -11,7 +22,7 @@
       --card: #1e293b;
       --card-inner: #0f172a;
       --accent: #3b82f6;
-      --accent-hover: #2563eb;https://docs.google.com/document/d/1UHO7z5gynG3d0IP9lBJf51tmkPF_ixoeHXxYYQb00vY/edit?usp=drivesdk
+      --accent-hover: #2563eb;
       --text: #f8fafc;
       --muted: #94a3b8;
       --border: #334155;
@@ -209,6 +220,61 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 6px;
       margin-top: 6px;
+    }
+      .acc-task-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border-right: 4px solid var(--accent);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+    .acc-task-card.has-remaining {
+      border-right-color: #ef4444 !important;
+    }
+    .acc-task-card.is-settled {
+      border-right-color: #22c55e !important;
+    }
+    .acc-task-title {
+      font-size: 0.95em;
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+    .acc-task-meta {
+      font-size: 0.84em;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .acc-stat-pills {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: #0f172a;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
+    .acc-pill-label {
+      font-size: 0.75em;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .acc-pill-val {
+      font-size: 0.9em;
+      font-weight: bold;
+    }
+    .payment-history-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-right: 4px solid var(--success);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
     }
   </style>
 </head>
@@ -1553,24 +1619,52 @@
         if (!data.rows || data.rows.length === 0) {
           tasksContainer.innerText = "هیچ تسکی با فیلترهای انتخابی یافت نشد.";
         } else {
-          tasksContainer.innerHTML = data.rows.map(r => `
-            <div class="task-item" style="border-right-color: ${r.remaining > 0 ? '#f87171' : 'var(--success)'};">
-              <strong>📌 ${r.title}</strong><br>
-              <small>👤 مجری: <strong>${r.member_name}</strong> | 📅 تاریخ: <strong>${formatShamsiLabel(r.scheduled_date)}</strong></small><br>
-              <small>💰 دستمزد: ${Number(r.fee || 0).toLocaleString('fa-IR')} ت | بدهی تاییدشده: <strong style="color:#f87171;">${Number(r.approved_debt || 0).toLocaleString('fa-IR')} ت</strong></small><br>
-              <small>💳 پرداختی: <span style="color:var(--success);">${Number(r.paid || 0).toLocaleString('fa-IR')} ت</span> | مانده: <strong style="color:var(--warning);">${Number(r.remaining || 0).toLocaleString('fa-IR')} ت</strong></small>
-            </div>
-          `).join("");
+          tasksContainer.innerHTML = data.rows.map(r => {
+            const hasRemaining = (r.remaining || 0) > 0;
+            return `
+              <div class="acc-task-card ${hasRemaining ? 'has-remaining' : 'is-settled'}">
+                <div class="acc-task-title">📌 ${r.title}</div>
+                <div class="acc-task-meta">
+                  👤 مجری: <strong style="color:#fff;">${r.member_name}</strong> | 📅 تاریخ: <strong style="color:#fff;">${formatShamsiLabel(r.scheduled_date)}</strong>
+                </div>
+                <div class="acc-stat-pills">
+                  <div>
+                    <span class="acc-pill-label">بدهی تاییدشده</span>
+                    <span class="acc-pill-val" style="color: #f87171;">${Number(r.approved_debt || 0).toLocaleString('fa-IR')} ت</span>
+                  </div>
+                  <div>
+                    <span class="acc-pill-label">پرداخت‌شده</span>
+                    <span class="acc-pill-val" style="color: var(--success);">${Number(r.paid || 0).toLocaleString('fa-IR')} ت</span>
+                  </div>
+                  <div>
+                    <span class="acc-pill-label">مانده بدهی</span>
+                    <span class="acc-pill-val" style="color: ${hasRemaining ? '#fbbf24' : 'var(--success)'};">${Number(r.remaining || 0).toLocaleString('fa-IR')} ت</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
         }
 
         if (!data.payments || data.payments.length === 0) {
           paymentsContainer.innerText = "هیچ پرداختی در این دوره ثبت نشده است.";
         } else {
           paymentsContainer.innerHTML = data.payments.map(p => `
-            <div class="task-item" style="border-right-color: var(--success);">
-              <strong>💳 ${p.description || 'تسویه حساب'}</strong><br>
-              <small>👤 مجری: <strong>${p.member_name}</strong> | 📌 Task: ${p.task_title || 'تسویه کلی'}</small><br>
-              <small>💰 مبلغ: <strong style="color:var(--success);">${Number(p.amount || 0).toLocaleString('fa-IR')} تومان</strong> | 📅 تاریخ: ${formatShamsiLabel(p.paid_shamsi_date || '')}</small>
+            <div class="payment-history-card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 8px;">
+                <div style="flex:1;">
+                  <strong style="color: #fff; font-size: 0.95em;">💳 ${p.description || 'تسویه حساب'}</strong>
+                  <div style="font-size: 0.84em; color: #cbd5e1; margin-top: 4px;">
+                    👤 مجری: <strong style="color:#fff;">${p.member_name}</strong> | 📌 تسک: <strong style="color:#38bdf8;">${p.task_title || 'تسویه کلی'}</strong>
+                  </div>
+                  <div style="font-size: 0.84em; color: #cbd5e1; margin-top: 4px;">
+                    💰 مبلغ: <strong style="color:var(--success); font-size:1.05em;">${Number(p.amount || 0).toLocaleString('fa-IR')} تومان</strong> | 📅 تاریخ: <strong style="color:#fff;">${formatShamsiLabel(p.paid_shamsi_date || '')}</strong>
+                  </div>
+                </div>
+                <button onclick="deletePayment('${p.id}')" style="width:auto; background:#dc2626; color:#fff; font-size:0.75em; padding:6px 10px; margin:0; border-radius:6px; cursor:pointer; font-weight:bold; white-space:nowrap;" title="حذف پرداخت و بازگشت به مانده بدهی">
+                  🗑 لغو و حذف
+                </button>
+              </div>
             </div>
           `).join("");
         }
@@ -1631,6 +1725,25 @@
           taskSel.innerHTML += `<option value="${t.id}">📌 ${t.title} (${Number(t.fixed_fee || 0).toLocaleString('fa-IR')} ت)</option>`;
         });
       } catch (e) {}
+    }
+
+        async function deletePayment(paymentId) {
+      if (!confirm("آیا از حذف این پرداخت و بازگشت مبلغ به مانده بدهی مجری اطمینان دارید؟")) return;
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=delete_payment_api&admin_id=${ADMIN_ID}&payment_id=${paymentId}`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("پرداخت با موفقیت حذف شد و محاسبات حسابداری به‌روزرسانی گردید.");
+          await fetchAccountingData();
+        } else {
+          alert(result.error || "خطا در حذف پرداخت.");
+        }
+      } catch (e) {
+        alert("خطا در ارتباط با سرور.");
+      }
     }
 
     async function submitAccountingPayment() {
