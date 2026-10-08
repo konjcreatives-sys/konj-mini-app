@@ -302,6 +302,7 @@
     <div class="sub-tabs">
       <button id="tab-single-btn" class="sub-btn active" onclick="switchTab('single')">📌 پروژه تکی</button>
       <button id="tab-monthly-btn" class="sub-btn" onclick="switchTab('monthly')">📅 کمپین ماهانه</button>
+      <button id="tab-event-btn" class="sub-btn" onclick="switchTab('event')">🎉 پروژه ایونت / تیمی</button>
     </div>
 
     <!-- فرم ۱: پروژه تکی -->
@@ -364,6 +365,52 @@
         <div id="generated-posts"></div>
         <button id="submit-btn" onclick="submitProject()" style="background: var(--success);">🚀 ثبت نهایی کمپین ماهانه</button>
       </div>
+    </div>
+
+    <!-- فرم ۳: پروژه ایونت / رویداد تیمی -->
+    <div id="event-project-card" class="hidden">
+      <label>نام کارفرما / عنوان ایونت:</label>
+      <input type="text" id="event_brand" placeholder="مثال: همایش سالانه برند نایک">
+
+      <label>📅 انتخاب تاریخ شمسی رویداد:</label>
+      <div class="date-row">
+        <select id="event_shamsi_day"></select>
+        <select id="event_shamsi_month"></select>
+        <select id="event_shamsi_year"></select>
+      </div>
+      <span id="event_date_summary" class="jalali-badge"></span>
+
+      <label>ساعت برگزاری / آفیش:</label>
+      <input type="time" id="event_time" value="16:00">
+
+      <label>محل / لوکیشن برگزاری:</label>
+      <input type="text" id="event_location" placeholder="مثال: هتل اسپیناس پالاس - سالن اصلی">
+
+      <label>📝 توضیحات و دستورالعمل عمومی برای کل تیم (اختیاری):</label>
+      <textarea id="event_general_notes" rows="2" placeholder="دستورالعمل مشترک برای تمام عوامل (مثلاً: کد پوشش مشکی رسمی، حضور ۴۵ دقیقه قبل از شروع)"></textarea>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; margin-bottom: 8px;">
+        <h4 style="margin: 0; color: #fff;">👥 تخصص‌ها و عوامل ایونت</h4>
+        <button type="button" onclick="addEventSpecialtyBlock()" style="width: auto; padding: 6px 14px; margin-top: 0; font-size: 0.85em; background: #8b5cf6;">
+          ➕ افزودن تخصص
+        </button>
+      </div>
+      <small style="color: var(--muted); display: block; margin-bottom: 12px;">
+        با زدن دکمه فوق تخصص مورد نیاز را اضافه کنید و اعضای حاضر در ایونت را با تیک زدن انتخاب نمایید.
+      </small>
+
+      <!-- کانتینر باکس‌های تخصص -->
+      <div id="event_specialty_blocks_container"></div>
+
+      <!-- کارت خلاصه هزینه و نفرات -->
+      <div class="kpi-card" style="margin-top: 16px; text-align: right; border-color: #8b5cf6; background: rgba(139, 92, 246, 0.08);">
+        <div style="font-size: 0.95em;">👥 <strong>تعداد کل عوامل انتخابی:</strong> <span id="event_total_crew_count" style="color: #38bdf8; font-weight: bold;">۰ نفر</span></div>
+        <div style="margin-top: 6px; font-size: 0.95em;">💰 <strong>مجموع کل دستمزدهای ایونت:</strong> <span id="event_total_fees_sum" style="color: #22c55e; font-weight: bold;">۰ تومان</span></div>
+      </div>
+
+      <button id="event-submit-btn" onclick="submitEventProject()" style="background: #8b5cf6; margin-top: 14px; font-size: 0.95em;">
+        🚀 ثبت نهایی پروژه ایونت و ارسال آفیش‌ها
+      </button>
     </div>
   </div>
 
@@ -852,16 +899,269 @@
     }
 
     function switchTab(tab) {
+      const singleCard = document.getElementById("single-project-card");
+      const monthlyCard = document.getElementById("monthly-project-card");
+      const eventCard = document.getElementById("event-project-card");
+      const btnSingle = document.getElementById("tab-single-btn");
+      const btnMonthly = document.getElementById("tab-monthly-btn");
+      const btnEvent = document.getElementById("tab-event-btn");
+
+      if (singleCard) singleCard.classList.add("hidden");
+      if (monthlyCard) monthlyCard.classList.add("hidden");
+      if (eventCard) eventCard.classList.add("hidden");
+
+      if (btnSingle) btnSingle.classList.remove("active");
+      if (btnMonthly) btnMonthly.classList.remove("active");
+      if (btnEvent) btnEvent.classList.remove("active");
+
       if (tab === 'single') {
-        document.getElementById("single-project-card").classList.remove("hidden");
-        document.getElementById("monthly-project-card").classList.add("hidden");
-        document.getElementById("tab-single-btn").classList.add("active");
-        document.getElementById("tab-monthly-btn").classList.remove("active");
+        if (singleCard) singleCard.classList.remove("hidden");
+        if (btnSingle) btnSingle.classList.add("active");
+      } else if (tab === 'monthly') {
+        if (monthlyCard) monthlyCard.classList.remove("hidden");
+        if (btnMonthly) btnMonthly.classList.add("active");
+      } else if (tab === 'event') {
+        if (eventCard) eventCard.classList.remove("hidden");
+        if (btnEvent) btnEvent.classList.add("active");
+        const container = document.getElementById("event_specialty_blocks_container");
+        if (container && container.children.length === 0) {
+          addEventSpecialtyBlock();
+        }
+      }
+    }
+
+
+    // ==========================================
+    // بخش اختصاصی پروژه ایونت و رویدادهای چندعاملی
+    // ==========================================
+    let eventSpecialtyBlockCounter = 0;
+
+    function updateEventDateSummary() {
+      const daySel = document.getElementById("event_shamsi_day");
+      const monthSel = document.getElementById("event_shamsi_month");
+      const yearSel = document.getElementById("event_shamsi_year");
+      const summaryEl = document.getElementById("event_date_summary");
+      if (summaryEl && daySel && monthSel && yearSel) {
+        summaryEl.innerText = `📅 تاریخ ایونت: ${daySel.value} ${SHAMSI_MONTHS[monthSel.value - 1]} ${yearSel.value}`;
+      }
+    }
+
+    function addEventSpecialtyBlock() {
+      eventSpecialtyBlockCounter++;
+      const blockId = eventSpecialtyBlockCounter;
+      const container = document.getElementById("event_specialty_blocks_container");
+      if (!container) return;
+
+      const blockDiv = document.createElement("div");
+      blockDiv.id = `event-block-${blockId}`;
+      blockDiv.className = "card";
+      blockDiv.style.background = "var(--card-inner)";
+      blockDiv.style.border = "1px solid #475569";
+      blockDiv.style.borderRadius = "10px";
+      blockDiv.style.padding = "12px";
+      blockDiv.style.marginBottom = "14px";
+
+      let membersHtml = '';
+      if (!activeMembers || activeMembers.length === 0) {
+        membersHtml = '<div style="color:var(--muted); font-size:0.85em; padding:6px;">هیچ عضو فعالی یافت نشد.</div>';
       } else {
-        document.getElementById("monthly-project-card").classList.remove("hidden");
-        document.getElementById("single-project-card").classList.add("hidden");
-        document.getElementById("tab-monthly-btn").classList.add("active");
-        document.getElementById("tab-single-btn").classList.remove("active");
+        membersHtml = activeMembers.map(m => {
+          const specs = Array.isArray(m.specialties) ? m.specialties.join("، ") : (m.specialties || "");
+          return `
+            <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; color: #fff; font-size: 0.9em;">
+                <input type="checkbox" id="ev_chk_${blockId}_${m.chat_id}" onchange="toggleEventMemberCheck(${blockId}, '${m.chat_id}')" style="width: auto; margin: 0;">
+                <strong>👤 ${m.name}</strong>
+                <span style="font-size: 0.78em; color: var(--muted); margin-right: auto;">${specs || 'عمومی'}</span>
+              </label>
+              <div id="ev_fields_${blockId}_${m.chat_id}" class="hidden" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #334155;">
+                <div>
+                  <label style="font-size: 0.78em; margin-top: 0; color: var(--muted);">💰 دستمزد اختصاصی (تومان):</label>
+                  <input type="number" id="ev_fee_${blockId}_${m.chat_id}" value="2000000" step="100000" oninput="updateEventTotals()" style="padding: 6px 8px; font-size: 0.85em;">
+                </div>
+                <div style="margin-top: 6px;">
+                  <label style="font-size: 0.78em; margin-top: 0; color: var(--muted);">📝 شرح وظیفه / تجهیزات اختصاصی این مجری (اختیاری):</label>
+                  <input type="text" id="ev_note_${blockId}_${m.chat_id}" placeholder="مثلاً: دوربین اصلی با لنز واید و گیمبال" style="padding: 6px 8px; font-size: 0.85em;">
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      blockDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1; margin-left: 8px;">
+            <label style="margin-top: 0; font-size: 0.82em; color: #38bdf8;">📌 انتخاب تخصص این بخش:</label>
+            <select id="ev_role_${blockId}" onchange="updateEventTotals()" style="margin-top: 2px; padding: 8px; font-weight: bold;">
+              <option value="filmmaker">🎥 تصویربردار / فیلم‌ساز</option>
+              <option value="photographer">📷 عکاس</option>
+              <option value="editor">🎬 تدوین‌گر</option>
+              <option value="designer">🎨 طراح گرافیک</option>
+              <option value="ai_artist">🤖 هنرمند AI</option>
+            </select>
+          </div>
+          <button type="button" onclick="removeEventSpecialtyBlock(${blockId})" style="width: auto; padding: 6px 10px; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); font-size: 0.8em; margin-top: 14px;">
+            🗑 حذف تخصص
+          </button>
+        </div>
+        <div style="margin-top: 10px;">
+          <label style="font-size: 0.8em; color: var(--muted);">انتخاب عوامل این تخصص در ایونت:</label>
+          ${membersHtml}
+        </div>
+      `;
+
+      container.appendChild(blockDiv);
+      updateEventTotals();
+    }
+
+    function removeEventSpecialtyBlock(blockId) {
+      const blockEl = document.getElementById(`event-block-${blockId}`);
+      if (blockEl) {
+        blockEl.remove();
+        updateEventTotals();
+      }
+    }
+
+    function toggleEventMemberCheck(blockId, memberId) {
+      const chk = document.getElementById(`ev_chk_${blockId}_${memberId}`);
+      const fields = document.getElementById(`ev_fields_${blockId}_${memberId}`);
+      if (chk && fields) {
+        if (chk.checked) {
+          fields.classList.remove("hidden");
+        } else {
+          fields.classList.add("hidden");
+        }
+      }
+      updateEventTotals();
+    }
+
+    function updateEventTotals() {
+      let totalCount = 0;
+      let totalFees = 0;
+
+      const container = document.getElementById("event_specialty_blocks_container");
+      if (!container) return;
+
+      const chks = container.querySelectorAll("input[type='checkbox']:checked");
+      chks.forEach(chk => {
+        totalCount++;
+        const parts = chk.id.split('_'); // ev_chk_blockId_memberId
+        if (parts.length >= 4) {
+          const blockId = parts[2];
+          const memberId = parts.slice(3).join('_');
+          const feeInput = document.getElementById(`ev_fee_${blockId}_${memberId}`);
+          if (feeInput) {
+            const fee = parseInt(feeInput.value, 10);
+            if (!isNaN(fee) && fee > 0) totalFees += fee;
+          }
+        }
+      });
+
+      const countEl = document.getElementById("event_total_crew_count");
+      const sumEl = document.getElementById("event_total_fees_sum");
+      if (countEl) countEl.innerText = `${totalCount} نفر`;
+      if (sumEl) sumEl.innerText = `${totalFees.toLocaleString()} تومان`;
+    }
+
+    async function submitEventProject() {
+      const brand = document.getElementById("event_brand").value.trim();
+      if (!brand) {
+        alert("لطفاً نام کارفرما / رویداد را وارد کنید.");
+        return;
+      }
+
+      const sDay = document.getElementById("event_shamsi_day").value;
+      const sMonth = document.getElementById("event_shamsi_month").value;
+      const sYear = document.getElementById("event_shamsi_year").value;
+      const shamsiDate = `${sYear}/${String(sMonth).padStart(2, '0')}/${String(sDay).padStart(2, '0')}`;
+      const time = document.getElementById("event_time").value.trim();
+      const location = document.getElementById("event_location").value.trim();
+      const generalNotes = document.getElementById("event_general_notes").value.trim();
+
+      const ROLE_LABELS = {
+        'filmmaker': 'تصویربردار',
+        'photographer': 'عکاس',
+        'editor': 'تدوین‌گر',
+        'designer': 'طراح گرافیک',
+        'ai_artist': 'هنرمند AI'
+      };
+
+      const container = document.getElementById("event_specialty_blocks_container");
+      const chks = container ? container.querySelectorAll("input[type='checkbox']:checked") : [];
+
+      if (chks.length === 0) {
+        alert("لطفاً حداقل یک مجری را برای این ایونت انتخاب نمایید.");
+        return;
+      }
+
+      const tasks = [];
+      for (const chk of chks) {
+        const parts = chk.id.split('_');
+        const blockId = parts[2];
+        const memberId = parts.slice(3).join('_');
+
+        const roleSelect = document.getElementById(`ev_role_${blockId}`);
+        const role = roleSelect ? roleSelect.value : 'filmmaker';
+        const roleTitle = ROLE_LABELS[role] || 'عامل ایونت';
+
+        const feeInput = document.getElementById(`ev_fee_${blockId}_${memberId}`);
+        const fee = feeInput ? (parseInt(feeInput.value, 10) || 0) : 0;
+
+        const noteInput = document.getElementById(`ev_note_${blockId}_${memberId}`);
+        const personalNotes = noteInput ? noteInput.value.trim() : '';
+
+        const memberObj = activeMembers.find(m => String(m.chat_id) === String(memberId));
+        const assigneeName = memberObj ? memberObj.name : `کاربر ${memberId}`;
+
+        tasks.push({
+          role: role,
+          role_title: roleTitle,
+          assignee_id: Number(memberId),
+          assignee_name: assigneeName,
+          fee: fee,
+          personal_notes: personalNotes
+        });
+      }
+
+      const btn = document.getElementById("event-submit-btn");
+      btn.disabled = true;
+      btn.innerText = "⏳ در حال ثبت ایونت و ارسال پیام‌های آفیش به اعضا...";
+
+      try {
+        const payload = {
+          admin_id: ADMIN_ID,
+          brand: brand,
+          date: shamsiDate,
+          time: time,
+          location: location,
+          general_notes: generalNotes,
+          tasks: tasks
+        };
+
+        const res = await fetch(`${FUNCTION_URL}?action=create_event_project_api`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ پروژه ایونت «${brand}» با ${tasks.length} مجری با موفقیت ثبت شد و آفیش‌ها ارسال گردید.`);
+          document.getElementById("event_brand").value = "";
+          document.getElementById("event_location").value = "";
+          document.getElementById("event_general_notes").value = "";
+          if (container) container.innerHTML = "";
+          updateEventTotals();
+          switchNav('command');
+        } else {
+          alert("خطا در ثبت ایونت: " + (data.error || "خطای ناشناخته"));
+        }
+      } catch (err) {
+        alert("خطا در برقراری ارتباط با سرور.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "🚀 ثبت نهایی پروژه ایونت و ارسال آفیش‌ها";
       }
     }
 
@@ -872,6 +1172,16 @@
         document.querySelectorAll(".admin-only").forEach(el => el.classList.remove("hidden"));
         populateShamsiDropdowns("single");
         populateShamsiDropdowns("monthly");
+        populateShamsiDropdowns("event");
+        const evDaySel = document.getElementById("event_shamsi_day");
+        const evMonthSel = document.getElementById("event_shamsi_month");
+        const evYearSel = document.getElementById("event_shamsi_year");
+        if (evDaySel && evMonthSel && evYearSel) {
+          evDaySel.addEventListener("change", updateEventDateSummary);
+          evMonthSel.addEventListener("change", updateEventDateSummary);
+          evYearSel.addEventListener("change", updateEventDateSummary);
+          updateEventDateSummary();
+        }
         populateAccountingMonthDropdown();
         populatePaymentPeriodDropdowns();
         toggleGeneralPaymentPeriod();
