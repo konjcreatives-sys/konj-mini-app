@@ -293,6 +293,42 @@
       <button id="sub-active-btn" class="sub-btn active" onclick="switchMemberSub('active')">⏳ تسک‌های فعال</button>
       <button id="sub-completed-btn" class="sub-btn" onclick="switchMemberSub('completed')">🏁 تسک‌های اتمام‌یافته / بایگانی</button>
     </div>
+
+    <!-- پنل فیلترهای اختصاصی کارتابل مجری -->
+    <div class="filter-panel" style="margin-bottom: 12px;">
+      <div style="font-size:0.85em; font-weight:bold; color:#38bdf8; margin-bottom:6px;">🔍 فیلتر پروژه‌های من:</div>
+      <div class="filter-grid-3">
+        <div>
+          <label style="margin-top:0;">🎨 نوع تسک / تخصص</label>
+          <select id="member_filter_role" onchange="renderMemberTasks(currentMemberSub)">
+            <option value="">همه تخصص‌ها</option>
+            <option value="filmmaker">🎥 تصویربردار</option>
+            <option value="photographer">📷 عکاس</option>
+            <option value="editor">🎬 تدوین‌گر</option>
+            <option value="designer">🎨 طراح گرافیک</option>
+            <option value="ai_artist">🤖 هنرمند AI</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0;">🗓 ماه شمسی</label>
+          <select id="member_filter_month" onchange="renderMemberTasks(currentMemberSub)">
+            <option value="">همه ماه‌ها</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0;">📅 سال شمسی</label>
+          <select id="member_filter_year" onchange="renderMemberTasks(currentMemberSub)">
+            <option value="">همه سال‌ها</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+        <button type="button" onclick="clearMemberFilters()" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8em; background:#475569;">
+          ♻️ پاک کردن فیلترها
+        </button>
+      </div>
+    </div>
+
     <div id="member-tasks-list">در حال دریافت تسک‌ها...</div>
   </div>
 
@@ -885,10 +921,40 @@
       }
     }
 
+    let currentMemberSub = 'active';
+
     function switchMemberSub(sub) {
+      currentMemberSub = sub;
       document.getElementById("sub-active-btn").classList.toggle("active", sub === 'active');
       document.getElementById("sub-completed-btn").classList.toggle("active", sub === 'completed');
       renderMemberTasks(sub);
+    }
+
+    function clearMemberFilters() {
+      const rSel = document.getElementById("member_filter_role");
+      const mSel = document.getElementById("member_filter_month");
+      const ySel = document.getElementById("member_filter_year");
+      if (rSel) rSel.value = "";
+      if (mSel) mSel.value = "";
+      if (ySel) ySel.value = "";
+      renderMemberTasks(currentMemberSub);
+    }
+
+    function populateMemberFilters() {
+      const mSel = document.getElementById("member_filter_month");
+      const ySel = document.getElementById("member_filter_year");
+      if (mSel) {
+        mSel.innerHTML = '<option value="">همه ماه‌ها</option>';
+        SHAMSI_MONTHS.forEach((mName, idx) => {
+          mSel.innerHTML += `<option value="${idx + 1}">${mName}</option>`;
+        });
+      }
+      if (ySel) {
+        ySel.innerHTML = '<option value="">همه سال‌ها</option>';
+        [1402, 1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
+          ySel.innerHTML += `<option value="${y}">${y}</option>`;
+        });
+      }
     }
 
     function switchCmdSub(sub) {
@@ -1186,12 +1252,14 @@
         populatePaymentPeriodDropdowns();
         toggleGeneralPaymentPeriod();
         populateCommandFilters();
+        populateMemberFilters();
         populateCalendarFilters();
         updateSingleDateLabel();
         await fetchMembers();
       } else {
         const uName = currentUser?.first_name || '';
         document.getElementById("member-greeting").innerText = `سلام ${uName} عزیز، خوش آمدید.`;
+        populateMemberFilters();
         await fetchMembers();
       }
 
@@ -1422,12 +1490,33 @@
         return;
       }
 
+      const selRole = document.getElementById("member_filter_role") ? document.getElementById("member_filter_role").value : "";
+      const selMonth = document.getElementById("member_filter_month") ? document.getElementById("member_filter_month").value : "";
+      const selYear = document.getElementById("member_filter_year") ? document.getElementById("member_filter_year").value : "";
+
       const filtered = rawUserTasks.filter(t => {
-        if (filterType === 'completed') {
-          return t.status === 'COMPLETED' || t.status === 'CANCELLED';
-        } else {
-          return t.status !== 'COMPLETED' && t.status !== 'CANCELLED';
+        // ۱. فیلتر فعال / بایگانی
+        const isFinished = t.status === 'COMPLETED' || t.status === 'CANCELLED';
+        if (filterType === 'completed' && !isFinished) return false;
+        if (filterType !== 'completed' && isFinished) return false;
+
+        // ۲. فیلتر نوع تسک / تخصص
+        if (selRole && t.role_required !== selRole) return false;
+
+        // ۳. فیلتر تاریخ (سال و ماه شمسی)
+        if (selYear || selMonth) {
+          const parts = (t.scheduled_date || "").split('/');
+          if (parts.length === 3) {
+            const tYear = parts[0];
+            const tMonth = parseInt(parts[1], 10);
+            if (selYear && String(tYear) !== String(selYear)) return false;
+            if (selMonth && Number(tMonth) !== Number(selMonth)) return false;
+          } else {
+            return false;
+          }
         }
+
+        return true;
       });
 
       if (filtered.length === 0) {
