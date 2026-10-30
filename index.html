@@ -344,7 +344,7 @@
 
       <!-- مودال / پنل بازشونده دریافت گزارش مالی -->
       <div id="member_statement_modal" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #334155;">
-        <label style="margin-top:0; color:#38bdf8; font-size:0.82em;">🗓 انتخاب دوره مالی (از آبان به بعد):</label>
+        <label style="margin-top:0; color:#38bdf8; font-size:0.82em;">🗓 انتخاب دوره مالی گزارش:</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:4px;">
           <select id="member_stmt_year" style="font-size:0.85em; padding:6px;"></select>
           <select id="member_stmt_month" style="font-size:0.85em; padding:6px;"></select>
@@ -356,7 +356,7 @@
 
       <!-- مودال / پنل بازشونده درخواست تسویه حساب -->
       <div id="member_settlement_modal" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #334155;">
-        <label style="margin-top:0; color:#22c55e; font-size:0.82em;">🗓 دوره مالی تسویه (از آبان به بعد):</label>
+        <label style="margin-top:0; color:#22c55e; font-size:0.82em;">🗓 انتخاب دوره مالی جهت تسویه:</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:4px;">
           <select id="member_settle_year" style="font-size:0.85em; padding:6px;"></select>
           <select id="member_settle_month" style="font-size:0.85em; padding:6px;"></select>
@@ -1096,21 +1096,14 @@
 
       const today = getTodayShamsi();
       ySel.innerHTML = "";
-      [1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
+      [1402, 1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
         ySel.innerHTML += `<option value="${y}" ${y === today.year ? 'selected' : ''}>${y}</option>`;
       });
 
-      // ماه‌های شمسی از آبان به بعد
       mSel.innerHTML = "";
-      const eligible = [
-        { m: 8, name: "آبان" },
-        { m: 9, name: "آذر" },
-        { m: 10, name: "دی" },
-        { m: 11, name: "بهمن" },
-        { m: 12, name: "اسفند" }
-      ];
-      eligible.forEach(item => {
-        mSel.innerHTML += `<option value="${item.m}" ${item.m === today.month ? 'selected' : ''}>${item.name}</option>`;
+      SHAMSI_MONTHS.forEach((mName, idx) => {
+        const m = idx + 1;
+        mSel.innerHTML += `<option value="${m}" ${m === today.month ? 'selected' : ''}>${mName}</option>`;
       });
     }
 
@@ -1133,21 +1126,14 @@
 
       const today = getTodayShamsi();
       ySel.innerHTML = "";
-      [1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
+      [1402, 1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
         ySel.innerHTML += `<option value="${y}" ${y === today.year ? 'selected' : ''}>${y}</option>`;
       });
 
-      // ماه‌های شمسی از آبان به بعد
       mSel.innerHTML = "";
-      const eligible = [
-        { m: 8, name: "آبان" },
-        { m: 9, name: "آذر" },
-        { m: 10, name: "دی" },
-        { m: 11, name: "بهمن" },
-        { m: 12, name: "اسفند" }
-      ];
-      eligible.forEach(item => {
-        mSel.innerHTML += `<option value="${item.m}" ${item.m === today.month ? 'selected' : ''}>${item.name}</option>`;
+      SHAMSI_MONTHS.forEach((mName, idx) => {
+        const m = idx + 1;
+        mSel.innerHTML += `<option value="${m}" ${m === today.month ? 'selected' : ''}>${mName}</option>`;
       });
     }
 
