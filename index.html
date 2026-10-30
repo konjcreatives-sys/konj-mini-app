@@ -356,9 +356,15 @@
 
       <!-- مودال / پنل بازشونده درخواست تسویه حساب -->
       <div id="member_settlement_modal" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #334155;">
-        <label style="margin-top:0; color:#22c55e; font-size:0.82em;">نوع درخواست تسویه:</label>
+        <label style="margin-top:0; color:#22c55e; font-size:0.82em;">🗓 دوره مالی تسویه (از آبان به بعد):</label>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:4px;">
+          <select id="member_settle_year" style="font-size:0.85em; padding:6px;"></select>
+          <select id="member_settle_month" style="font-size:0.85em; padding:6px;"></select>
+        </div>
+
+        <label style="margin-top:8px; color:#22c55e; font-size:0.82em;">نوع درخواست تسویه:</label>
         <select id="member_settle_mode" onchange="toggleMemberSettleMode()" style="font-size:0.85em; padding:6px; margin-top:4px;">
-          <option value="FULL">🟢 تسویه کامل کل مانده بدهی</option>
+          <option value="FULL">🟢 تسویه کامل مانده این دوره</option>
           <option value="CUSTOM">🟡 تسویه طبق مبلغ درخواستی (به تومان)</option>
         </select>
 
@@ -1076,8 +1082,36 @@
       if (stmtModal) stmtModal.classList.add("hidden");
       if (modal) {
         modal.classList.toggle("hidden");
+        if (!modal.classList.contains("hidden")) {
+          populateMemberSettlementMonths();
+        }
         toggleMemberSettleMode();
       }
+    }
+
+    function populateMemberSettlementMonths() {
+      const ySel = document.getElementById("member_settle_year");
+      const mSel = document.getElementById("member_settle_month");
+      if (!ySel || !mSel) return;
+
+      const today = getTodayShamsi();
+      ySel.innerHTML = "";
+      [1403, 1404, 1405, 1406, 1407, 1408].forEach(y => {
+        ySel.innerHTML += `<option value="${y}" ${y === today.year ? 'selected' : ''}>${y}</option>`;
+      });
+
+      // ماه‌های شمسی از آبان به بعد
+      mSel.innerHTML = "";
+      const eligible = [
+        { m: 8, name: "آبان" },
+        { m: 9, name: "آذر" },
+        { m: 10, name: "دی" },
+        { m: 11, name: "بهمن" },
+        { m: 12, name: "اسفند" }
+      ];
+      eligible.forEach(item => {
+        mSel.innerHTML += `<option value="${item.m}" ${item.m === today.month ? 'selected' : ''}>${item.name}</option>`;
+      });
     }
 
     function toggleMemberSettleMode() {
@@ -1150,6 +1184,8 @@
     async function submitMemberSettlementRequest() {
       const uid = currentUserId || ADMIN_ID;
       const mode = document.getElementById("member_settle_mode").value;
+      const y = document.getElementById("member_settle_year").value;
+      const m = document.getElementById("member_settle_month").value;
       let customAmount = 0;
 
       if (mode === 'CUSTOM') {
@@ -1165,14 +1201,14 @@
       btn.innerText = "در حال ارسال درخواست تسویه...";
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=request_member_settlement_api&member_id=${uid}&mode=${mode}&amount=${customAmount}`, {
+        const res = await fetch(`${FUNCTION_URL}?action=request_member_settlement_api&member_id=${uid}&mode=${mode}&amount=${customAmount}&year=${y}&month=${m}`, {
           method: 'POST',
           headers: getHeaders()
         });
         const data = await res.json();
         if (data.success) {
           const displayAmt = Number(data.amount || 0).toLocaleString();
-          alert(`📨 درخواست تسویه به مبلغ ${displayAmt} تومان برای مدیریت ارسال شد.\nمدیریت هم در ربات و هم در بخش حسابداری مینی‌اپ درخواست شما را بررسی و تایید خواهد نمود.`);
+          alert(`📨 درخواست تسویه به مبلغ ${displayAmt} تومان برای دوره مربوطه ارسال شد.\nمدیریت هم در ربات و هم در بخش حسابداری مینی‌اپ درخواست شما را بررسی و تایید خواهد نمود.`);
           const modal = document.getElementById("member_settlement_modal");
           if (modal) modal.classList.add("hidden");
         } else {
@@ -1220,11 +1256,11 @@
               <div style="margin-top:4px; font-size:0.85em;">
                 💰 مبلغ درخواستی: <strong style="color:var(--success);">${amtStr} تومان</strong> (${modeLabel})
               </div>
-              <div style="font-size:0.8em; color:var(--muted); margin-top:2px;">
-                کل مانده بدهی فعلی: ${totalStr} تومان
+              <div style="font-size:0.8em; color:#38bdf8; margin-top:2px;">
+                🗓 دوره مالی: <strong>${r.month_name || ''} ${r.year || ''}</strong> (مانده دوره: ${totalStr} ت)
               </div>
               <div style="display:flex; gap:6px; margin-top:8px;">
-                <button type="button" onclick="approveSettlementFromAdmin(${r.member_id}, ${r.amount})" style="background:var(--success); padding:6px 10px; font-size:0.8em; margin-top:0; flex:1;">
+                <button type="button" onclick="approveSettlementFromAdmin(${r.member_id}, ${r.amount}, ${r.year || 1405}, ${r.month || 8})" style="background:var(--success); padding:6px 10px; font-size:0.8em; margin-top:0; flex:1;">
                   ✅ تایید تسویه و ثبت در حسابداری
                 </button>
                 <button type="button" onclick="rejectSettlementFromAdmin(${r.member_id})" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); border:1px solid var(--danger); padding:6px 10px; font-size:0.8em; margin-top:0;">
@@ -1239,17 +1275,19 @@
       }
     }
 
-    async function approveSettlementFromAdmin(memberId, amount) {
-      if (!confirm(`آیا از تایید تسویه حساب به مبلغ ${Number(amount).toLocaleString()} تومان و ثبت واریز در حسابداری اطمینان دارید؟`)) return;
+    async function approveSettlementFromAdmin(memberId, amount, year, month) {
+      if (!confirm(`آیا از تایید تسویه حساب به مبلغ ${Number(amount).toLocaleString()} تومان برای دوره مربوطه و ثبت واریز در حسابداری اطمینان دارید؟`)) return;
 
       try {
-        const res = await fetch(`${FUNCTION_URL}?action=approve_settlement_request_api&admin_id=${ADMIN_ID}&member_id=${memberId}&amount=${amount}`, {
+        const y = year || 1405;
+        const m = month || 8;
+        const res = await fetch(`${FUNCTION_URL}?action=approve_settlement_request_api&admin_id=${ADMIN_ID}&member_id=${memberId}&amount=${amount}&year=${y}&month=${m}`, {
           method: 'POST',
           headers: getHeaders()
         });
         const data = await res.json();
         if (data.success) {
-          alert("✅ تسویه حساب با موفقیت ثبت شد و مانده بدهی مجری به‌روزرسانی گردید.");
+          alert("✅ تسویه حساب با موفقیت ثبت شد و مانده بدهی مجری در دوره مربوطه به‌روزرسانی گردید.");
           await checkPendingSettlementRequests();
           await fetchAccountingData();
         } else {
