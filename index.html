@@ -781,7 +781,8 @@
     tg.expand();
 
     const SUPABASE_URL = "https://hloqlpffqvxqaqixmikc.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsb3FscGZmcXZ4cWFxaXhtaWtjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDEzOTU0OCwiZXhwIjoyMDk5NzE1NTQ4fQ.XQlPjyGfzye0e-FmelZ2GnrTcC_CDMNsK8bAoa1hSDE";
+    // کلید عمومی (publishable) — امن برای قرارگرفتن در کد سمت کاربر. هرگز کلید service_role را اینجا قرار ندهید.
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_xha_jz8DkwYXtoQxVgcNlg_qn-Ibxk6";
     const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-processor`;
     const ADMIN_ID = 83013720;
 
@@ -848,8 +849,7 @@
 
     function getHeaders() {
       return {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
         'Content-Type': 'application/json',
         'X-Telegram-Init-Data': tg.initData || ''
       };
