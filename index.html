@@ -266,6 +266,98 @@
       margin-bottom: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
     }
+    /* وضعیت پرداخت کارفرما (فقط پنل مدیر) */
+    .cpay-badge {
+      display: inline-block;
+      width: auto;
+      margin: 6px 0 2px 0;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78em;
+      font-weight: bold;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .cpay-UNPAID { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: #ef4444; }
+    .cpay-PAID { background: rgba(34, 197, 94, 0.15); color: #86efac; border-color: #22c55e; }
+    .cpay-MONTHLY { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: #3b82f6; }
+    .cpay-UNKNOWN { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border-color: #64748b; }
+    .cpay-UNPAID:hover { background: rgba(239, 68, 68, 0.25); }
+    .cpay-PAID:hover { background: rgba(34, 197, 94, 0.25); }
+    .cpay-MONTHLY:hover { background: rgba(59, 130, 246, 0.25); }
+    .cpay-UNKNOWN:hover { background: rgba(148, 163, 184, 0.22); }
+    .cpay-money {
+      font-size: 0.8em;
+      color: #cbd5e1;
+      margin-top: 2px;
+      line-height: 1.7;
+    }
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sheet {
+      width: 100%;
+      max-width: 520px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 16px 16px 0 0;
+      padding: 14px 16px 22px 16px;
+      box-sizing: border-box;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      background: #475569;
+      border-radius: 4px;
+      margin: 0 auto 10px auto;
+    }
+    .cpay-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .cpay-choice {
+      margin-top: 0;
+      padding: 10px 6px;
+      border-radius: 10px;
+      font-size: 0.85em;
+      opacity: 0.75;
+    }
+    .cpay-choice.selected {
+      opacity: 1;
+      box-shadow: 0 0 0 2px #fff inset;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 0.88em;
+      color: var(--text);
+    }
+    .check-row input { width: auto; margin: 0; }
+    .client-brand-row {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-right: 4px solid #64748b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 0.84em;
+      line-height: 1.7;
+    }
+    .client-brand-row.has-debt { border-right-color: var(--danger); }
   </style>
 </head>
 <body>
@@ -537,16 +629,26 @@
           </select>
         </div>
       </div>
-      <div class="filter-grid-2">
+      <div class="filter-grid-3" style="margin-top:6px;">
         <div>
           <label style="margin-top:0;">📅 سال شمسی</label>
           <select id="cmd_filter_year" onchange="renderCommandProjects(currentCmdSub)">
             <option value="">همه سال‌ها</option>
           </select>
         </div>
+        <div>
+          <label style="margin-top:0;">💵 پرداخت کارفرما</label>
+          <select id="cmd_filter_pay" onchange="renderCommandProjects(currentCmdSub)">
+            <option value="">همه</option>
+            <option value="UNPAID">🔴 پرداخت‌نشده</option>
+            <option value="PAID">🟢 پرداخت‌شده</option>
+            <option value="MONTHLY">🔵 ماهیانه</option>
+            <option value="UNKNOWN">⚪ نامشخص</option>
+          </select>
+        </div>
         <div style="display:flex; align-items:flex-end;">
           <button onclick="resetCommandFilters()" style="background:#334155; margin-top:0; padding:9px; font-size:0.8em;">
-            ♻️ پاک کردن فیلترها
+            ♻️ پاک کردن
           </button>
         </div>
       </div>
@@ -573,6 +675,36 @@
     <p style="color: var(--muted); font-size: 0.85em; margin-bottom: 12px;">
       حساب هر مجری را بر اساس ماه و Task مشاهده کنید. بدهی نهایی بر اساس دوره اتمام و تایید پروژه در حسابرسی قرار می‌گیرد.
     </p>
+
+    <!-- حساب کارفرماها (طلب از برندها) — فقط مدیر -->
+    <div style="background: rgba(59, 130, 246, 0.07); border: 1px solid #3b82f6; border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <h4 style="margin:0; color:#93c5fd;">🏢 حساب کارفرماها</h4>
+        <button onclick="fetchClientAccounts()" style="width:auto; margin:0; padding:5px 10px; font-size:0.75em; background:#334155;">🔄 بروزرسانی</button>
+      </div>
+      <p style="font-size:0.78em; color:var(--muted); margin:6px 0 10px 0;">طلب از کارفرماها (پروژه‌های پرداخت‌نشده‌ای که مبلغ دارند) در برابر بدهی به تیم. وضعیت هر پروژه را از برچسب رنگی روی کارت پروژه در «اتاق فرمان» تغییر دهید.</p>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <small style="color: var(--muted);">طلب از کارفرماها</small>
+          <div id="cl_receivable" class="kpi-num" style="color: #fca5a5;">—</div>
+        </div>
+        <div class="kpi-card">
+          <small style="color: var(--muted);">بدهی به تیم</small>
+          <div id="cl_team_debt" class="kpi-num" style="color: var(--warning);">—</div>
+        </div>
+        <div class="kpi-card">
+          <small style="color: var(--muted);">خالص (طلب − بدهی)</small>
+          <div id="cl_net" class="kpi-num">—</div>
+        </div>
+        <div class="kpi-card">
+          <small style="color: var(--muted);">پروژه‌های پرداخت‌نشده</small>
+          <div id="cl_unpaid_count" class="kpi-num" style="color: #fca5a5;">—</div>
+        </div>
+      </div>
+      <div id="cl_unpaid_note" style="font-size:0.78em; color:var(--warning); margin-bottom:8px;"></div>
+      <h5 style="margin:6px 0 8px 0;">طلب و خوش‌حسابی به تفکیک برند</h5>
+      <div id="client-brands-list" style="font-size:0.85em;">در حال بارگذاری...</div>
+    </div>
 
     <!-- فیلترها -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
@@ -724,6 +856,47 @@
     </div>
 
     <div id="studio-calendar-list">در حال بارگذاری تقویم...</div>
+  </div>
+
+  <!-- برگه پایینی: وضعیت پرداخت کارفرما (فقط مدیر) -->
+  <div id="cpay-sheet" class="sheet-backdrop hidden" onclick="if (event.target === this) closeClientPaySheet()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <h4 style="margin:0;">💵 پرداخت کارفرما</h4>
+        <button onclick="closeClientPaySheet()" style="width:auto; padding:4px 10px; margin:0; background:#334155; border-radius:6px;">✖️</button>
+      </div>
+      <div id="cpay_project_label" style="font-size:0.85em; color:var(--muted); margin-top:6px;"></div>
+      <input type="hidden" id="cpay_project_id">
+
+      <label>وضعیت پرداخت:</label>
+      <div class="cpay-choice-grid">
+        <button type="button" class="cpay-choice cpay-UNPAID" data-st="UNPAID" onclick="selectClientPayStatus('UNPAID')">🔴 پرداخت‌نشده</button>
+        <button type="button" class="cpay-choice cpay-PAID" data-st="PAID" onclick="selectClientPayStatus('PAID')">🟢 پرداخت‌شده</button>
+        <button type="button" class="cpay-choice cpay-MONTHLY" data-st="MONTHLY" onclick="selectClientPayStatus('MONTHLY')">🔵 ماهیانه</button>
+        <button type="button" class="cpay-choice cpay-UNKNOWN" data-st="UNKNOWN" onclick="selectClientPayStatus('UNKNOWN')">⚪ نامشخص</button>
+      </div>
+
+      <label>مبلغ کارفرما برای این پروژه (تومان):</label>
+      <input type="number" id="cpay_amount" min="0" step="100000" placeholder="خالی = ثبت نشده">
+      <div id="cpay_profit_preview" style="font-size:0.8em; color:var(--muted); margin-top:6px;"></div>
+
+      <div id="cpay_paid_date_box" class="hidden">
+        <label>🗓 تاریخ پرداخت (شمسی):</label>
+        <div class="date-row">
+          <select id="cpay_shamsi_day"></select>
+          <select id="cpay_shamsi_month"></select>
+          <select id="cpay_shamsi_year"></select>
+        </div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="cpay_brand_monthly">
+        <span>این کارفرما ماهیانه است <small style="color:var(--muted);">(پروژه‌های جدیدش خودکار «ماهیانه» ثبت می‌شوند)</small></span>
+      </label>
+
+      <button id="cpay_save_btn" onclick="saveClientPay()" style="background: var(--success);">💾 ذخیره</button>
+    </div>
   </div>
 
   <!-- مودال اختصاصی ارجاع به پس‌تولید / تدوین‌گر -->
@@ -972,6 +1145,7 @@
         document.getElementById("nav-accounting-btn").classList.add("active");
         document.getElementById("view-accounting").classList.remove("hidden");
         fetchAccountingData();
+        fetchClientAccounts();
       } else if (nav === 'calendar') {
         document.getElementById("nav-calendar-btn").classList.add("active");
         document.getElementById("view-calendar").classList.remove("hidden");
@@ -1943,6 +2117,7 @@
       document.getElementById("cmd_filter_role").value = "";
       document.getElementById("cmd_filter_month").value = "";
       document.getElementById("cmd_filter_year").value = "";
+      document.getElementById("cmd_filter_pay").value = "";
       renderCommandProjects(currentCmdSub);
     }
 
@@ -1987,6 +2162,11 @@
         });
       }
 
+      const selPay = document.getElementById("cmd_filter_pay") ? document.getElementById("cmd_filter_pay").value : "";
+      if (selPay) {
+        filteredProjects = filteredProjects.filter(p => p.id !== 'orphan_group' && (p.client_payment_status || 'UNKNOWN') === selPay);
+      }
+
       if (filteredProjects.length === 0) {
         container.innerText = "هیچ پروژه‌ای مطابق فیلترهای انتخابی یافت نشد.";
         return;
@@ -2002,7 +2182,8 @@
             <strong>📁 ${p.client_name}</strong> <small>(${p.service_type || 'پروژه'})</small><br>
             ${p.deadline ? `<small>📅 ددلاین/تاریخ: ${formatShamsiLabel(p.deadline)}</small><br>` : ''}
             <small style="color: ${isCompleted ? 'var(--success)' : 'var(--accent)'};">وضعیت: ${isCompleted ? '🏁 اتمام یافته (بایگانی)' : '🟢 فعال'}</small><br>
-            
+            ${!isOrphanGroup ? renderClientPayBlock(p) : ''}
+
             <div class="btn-action-row">
               <button onclick="toggleProjectTasks('${p.id}')" style="background: var(--accent);">
                 ${isExpanded ? '🔽 بستن مدیریت تسک‌ها' : '📋 مشاهده و مدیریت تسک‌ها'}
@@ -2028,6 +2209,203 @@
           loadProjectTasksInBox(pid);
         }
       });
+    }
+
+    // ===================== وضعیت پرداخت کارفرما (فقط پنل مدیر) =====================
+    const CLIENT_PAY_LABELS = {
+      'UNPAID': '🔴 پرداخت‌نشده',
+      'PAID': '🟢 پرداخت‌شده',
+      'MONTHLY': '🔵 ماهیانه',
+      'UNKNOWN': '⚪ نامشخص'
+    };
+    let cpayState = { projectId: null, status: 'UNKNOWN', brandMonthlyInitial: false, tasksCost: 0 };
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function faToman(n) {
+      return `${Number(n || 0).toLocaleString('fa-IR')} تومان`;
+    }
+
+    function renderClientPayBlock(p) {
+      const st = p.client_payment_status || 'UNKNOWN';
+      const paidOn = st === 'PAID' && p.client_paid_shamsi_date ? ` — ${formatShamsiLabel(p.client_paid_shamsi_date)}` : '';
+      let html = `<button type="button" class="cpay-badge cpay-${st}" onclick="openClientPaySheet('${p.id}')">${CLIENT_PAY_LABELS[st] || st}${paidOn} ✎</button>`;
+      if (p.client_amount !== null && p.client_amount !== undefined) {
+        const profit = Number(p.client_profit || 0);
+        html += `<div class="cpay-money">💵 مبلغ کارفرما: <strong>${faToman(p.client_amount)}</strong> | 👥 هزینه تیم: ${faToman(p.tasks_cost)}<br>` +
+          `📈 سود پروژه: <strong style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">${faToman(profit)}</strong></div>`;
+      }
+      return html;
+    }
+
+    function selectClientPayStatus(st) {
+      cpayState.status = st;
+      document.querySelectorAll('#cpay-sheet .cpay-choice').forEach(b => b.classList.toggle('selected', b.dataset.st === st));
+      document.getElementById('cpay_paid_date_box').classList.toggle('hidden', st !== 'PAID');
+    }
+
+    function updateCpayProfitPreview() {
+      const raw = document.getElementById('cpay_amount').value.trim();
+      const el = document.getElementById('cpay_profit_preview');
+      if (raw === '') {
+        el.innerText = `👥 هزینه تیم (تسک‌های کنسل‌نشده): ${faToman(cpayState.tasksCost)}`;
+        return;
+      }
+      const profit = Number(raw) - cpayState.tasksCost;
+      el.innerHTML = `👥 هزینه تیم: ${faToman(cpayState.tasksCost)} | 📈 سود: <strong style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'};">${faToman(profit)}</strong>`;
+    }
+
+    function openClientPaySheet(projectId) {
+      const p = (rawAllProjects || []).find(x => String(x.id) === String(projectId));
+      if (!p) return;
+      cpayState = {
+        projectId: p.id,
+        status: p.client_payment_status || 'UNKNOWN',
+        brandMonthlyInitial: !!p.brand_is_monthly,
+        tasksCost: Number(p.tasks_cost || 0),
+        clientName: p.client_name
+      };
+      document.getElementById('cpay_project_id').value = p.id;
+      document.getElementById('cpay_project_label').innerHTML = `📁 <strong>${escapeHtml(p.client_name)}</strong>${p.deadline ? ' — ' + formatShamsiLabel(p.deadline) : ''}`;
+      document.getElementById('cpay_amount').value = (p.client_amount === null || p.client_amount === undefined) ? '' : p.client_amount;
+      document.getElementById('cpay_amount').oninput = updateCpayProfitPreview;
+
+      populateShamsiDropdowns('cpay');
+      if (p.client_paid_shamsi_date) {
+        const parts = String(p.client_paid_shamsi_date).split('/');
+        if (parts.length === 3) {
+          document.getElementById('cpay_shamsi_year').value = parseInt(parts[0], 10);
+          document.getElementById('cpay_shamsi_month').value = parseInt(parts[1], 10);
+          document.getElementById('cpay_shamsi_day').value = parseInt(parts[2], 10);
+        }
+      }
+
+      const monthlyBox = document.getElementById('cpay_brand_monthly');
+      monthlyBox.checked = cpayState.brandMonthlyInitial;
+      monthlyBox.onchange = () => {
+        if (monthlyBox.checked && (cpayState.status === 'UNPAID' || cpayState.status === 'UNKNOWN')) selectClientPayStatus('MONTHLY');
+      };
+
+      selectClientPayStatus(cpayState.status);
+      updateCpayProfitPreview();
+      document.getElementById('cpay-sheet').classList.remove('hidden');
+    }
+
+    function closeClientPaySheet() {
+      document.getElementById('cpay-sheet').classList.add('hidden');
+    }
+
+    async function saveClientPay() {
+      const btn = document.getElementById('cpay_save_btn');
+      const projectId = cpayState.projectId;
+      if (!projectId) return;
+
+      const amountRaw = document.getElementById('cpay_amount').value.trim();
+      if (amountRaw !== '' && (!/^\d+$/.test(amountRaw))) {
+        alert('مبلغ کارفرما باید عدد صحیح (تومان) باشد.');
+        return;
+      }
+
+      const body = { project_id: projectId, status: cpayState.status, client_amount: amountRaw };
+      if (cpayState.status === 'PAID') {
+        const y = document.getElementById('cpay_shamsi_year').value;
+        const m = document.getElementById('cpay_shamsi_month').value;
+        const d = document.getElementById('cpay_shamsi_day').value;
+        body.paid_shamsi_date = `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'در حال ذخیره...';
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=set_client_payment_api`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (!result.success) {
+          alert(result.error || 'خطا در ثبت وضعیت پرداخت.');
+          return;
+        }
+
+        const brandMonthly = document.getElementById('cpay_brand_monthly').checked;
+        if (brandMonthly !== cpayState.brandMonthlyInitial) {
+          const bRes = await fetch(`${FUNCTION_URL}?action=set_brand_monthly_api`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ client_name: cpayState.clientName, is_monthly: brandMonthly })
+          });
+          const bResult = await bRes.json();
+          if (!bResult.success) alert(bResult.error || 'وضعیت پرداخت ذخیره شد، ولی تنظیم «کارفرمای ماهیانه» انجام نشد.');
+        }
+
+        await fetchCommandProjects();
+        closeClientPaySheet();
+      } catch (e) {
+        alert('خطا در ارتباط با سرور.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '💾 ذخیره';
+      }
+    }
+
+    async function fetchClientAccounts() {
+      const list = document.getElementById('client-brands-list');
+      if (!list) return;
+      list.innerText = 'در حال بارگذاری...';
+      try {
+        const res = await fetch(`${FUNCTION_URL}?action=get_client_receivables_api`, { headers: getHeaders() });
+        const data = await res.json();
+        if (!data.success) {
+          list.innerText = data.error || 'خطا در دریافت حساب کارفرماها.';
+          return;
+        }
+
+        const t = data.totals || {};
+        const team = data.team || {};
+        document.getElementById('cl_receivable').innerText = faToman(t.receivable_total);
+        document.getElementById('cl_team_debt').innerText = faToman(team.team_debt);
+        const netEl = document.getElementById('cl_net');
+        netEl.innerText = faToman(team.net_position);
+        netEl.style.color = Number(team.net_position || 0) >= 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('cl_unpaid_count').innerText = Number(t.unpaid_count || 0).toLocaleString('fa-IR');
+        document.getElementById('cl_unpaid_note').innerText = t.unpaid_without_amount
+          ? `⚠️ ${Number(t.unpaid_without_amount).toLocaleString('fa-IR')} پروژه‌ی پرداخت‌نشده هنوز مبلغ کارفرما ندارد و در جمع طلب حساب نشده است.`
+          : '';
+
+        const brands = data.by_brand || [];
+        if (brands.length === 0) {
+          list.innerHTML = '<div style="color:var(--muted);">هنوز هیچ پروژه‌ای وضعیت پرداخت ندارد (پروژه‌های قدیمی «نامشخص» هستند).</div>';
+          return;
+        }
+
+        list.innerHTML = brands.map(b => {
+          const hasDebt = b.unpaid_count > 0;
+          const lines = [];
+          if (hasDebt) {
+            lines.push(`🔴 طلب: <strong style="color:#fca5a5;">${faToman(b.unpaid_amount)}</strong> (${Number(b.unpaid_count).toLocaleString('fa-IR')} پروژه` +
+              (b.unpaid_without_amount ? `، ${Number(b.unpaid_without_amount).toLocaleString('fa-IR')} بدون مبلغ` : '') + ')' +
+              (b.oldest_unpaid_days !== null && b.oldest_unpaid_days !== undefined ? ` | قدیمی‌ترین: ${Number(b.oldest_unpaid_days).toLocaleString('fa-IR')} روز` : ''));
+          }
+          if (b.paid_count > 0) {
+            lines.push(`🟢 پرداخت‌شده: ${Number(b.paid_count).toLocaleString('fa-IR')} پروژه (${faToman(b.paid_amount)})`);
+          }
+          if (b.avg_days_to_pay !== null && b.avg_days_to_pay !== undefined) {
+            lines.push(`⏱ میانگین فاصله تاریخ پروژه تا پرداخت: <strong>${Number(b.avg_days_to_pay).toLocaleString('fa-IR')} روز</strong> (بیشترین: ${Number(b.max_days_to_pay).toLocaleString('fa-IR')})`);
+          }
+          if (b.monthly_count > 0) {
+            lines.push(`🔵 ماهیانه: ${Number(b.monthly_count).toLocaleString('fa-IR')} پروژه`);
+          }
+          return `<div class="client-brand-row ${hasDebt ? 'has-debt' : ''}">
+            <strong>🏢 ${escapeHtml(b.client_name)}</strong>${b.is_monthly ? ' <span class="badge" style="color:#93c5fd;">🔵 کارفرمای ماهیانه</span>' : ''}<br>
+            ${lines.join('<br>')}
+          </div>`;
+        }).join('');
+      } catch (e) {
+        list.innerText = 'خطا در ارتباط با سرور.';
+      }
     }
 
     async function toggleProjectTasks(projectId) {
